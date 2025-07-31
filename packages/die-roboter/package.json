@@ -1,6 +1,6 @@
 {
   "name": "die-roboter",
-  "version": "1.0.0",
+  "version": "1.1.6",
   "description": "A TypeScript library for robot simulation and control with Three.js",
   "main": "dist/index.js",
   "module": "dist/index.js",
@@ -14,12 +14,14 @@
     "build": "tsc",
     "dev": "tsc --watch",
     "test": "jest",
-    "prepublishOnly": "npm run build",
-    "publish": "npm publish --access public"
+    "prepare-docs": "cp ../../README.md . && cp ../../LICENSE . && cp -r ../../docs .",
+    "cleanup-docs": "rm -rf ./README.md ./LICENSE ./docs",
+    "prepublishOnly": "npm run build && npm run prepare-docs",
+    "postpublish": "npm run cleanup-docs"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/yourusername/die-roboter.git"
+    "url": "https://github.com/therealadityashankar/die-roboter.git"
   },
   "keywords": [
     "robots",
@@ -30,12 +32,12 @@
     "robotics",
     "3d"
   ],
-  "author": "Your Name <your.email@example.com>",
+  "author": "Aditya Shankar",
   "license": "Apache-2.0",
   "bugs": {
-    "url": "https://github.com/yourusername/die-roboter/issues"
+    "url": "https://github.com/therealadityashankar/die-roboter/issues"
   },
-  "homepage": "https://github.com/yourusername/die-roboter#readme",
+  "homepage": "https://github.com/therealadityashankar/die-roboter#readme",
   "dependencies": {
     "urdf-loader": "^0.12.6"
   },

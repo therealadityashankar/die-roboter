@@ -2,6 +2,10 @@
 
 A TypeScript library for simulating and controlling robot arms with Three.js.
 
+<p align="center">
+  <img src="docs/SO101.png" alt="SO101 Robot" width="600">
+</p>
+
 ## Installation
 
 ```bash
