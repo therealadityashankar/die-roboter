@@ -18,6 +18,8 @@ The library provides robot models that can be controlled through a simple pivot 
 
 ## Minimal Example
 
+You can see this [example on codepen here](https://codepen.io/riversnow/pen/YPyNdOP)
+
 ```javascript
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
