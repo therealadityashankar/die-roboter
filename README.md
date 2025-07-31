@@ -56,29 +56,30 @@ window.addEventListener('resize', () => {
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
+```
 
 ## Controlling the Robot
 
 You can control the robot using the `setPivotValue` method:
 
 ```javascript
-// Set shoulder pan to 50 (in the -100 to 100 range)
+// Set shoulder pan to 50
 // available options: 
-// - 'shoulder_pan': Base rotation (swivel)
-// - 'shoulder_lift': Shoulder joint (up/down movement)
-// - 'elbow_flex': Elbow joint (bend/extend)
-// - 'wrist_flex': Wrist pitch (up/down movement)
-// - 'wrist_roll': Wrist rotation
-// - 'gripper': Gripper (open/close) - Note: Range is 0 to 100 (not -100 to 100)
+// - 'shoulder_pan': Base rotation (swivel) - Range is -100 to 100
+// - 'shoulder_lift': Shoulder joint (up/down movement) - Range is -100 to 100
+// - 'elbow_flex': Elbow joint (bend/extend) - Range is -100 to 100
+// - 'wrist_flex': Wrist pitch (up/down movement) - Range is -100 to 100
+// - 'wrist_roll': Wrist rotation - Range is -100 to 100
+// - 'gripper': Gripper (open/close) - Range is 0 to 100
 robot.setPivotValue('shoulder_pan', 50);
 
 // Set multiple pivots at once
 robot.setPivotValues({
-  'shoulder_lift': 30,
+  'shoulder_lift': 30, 
   'elbow_flex': -20,
   'wrist_flex': 10,
   'wrist_roll': 45,
-  'gripper': 0  // Close gripper (gripper range is 0-100, where 0 is closed)
+  'gripper': 0  // Close gripper, 100 is completely open
 });
 ```
 
