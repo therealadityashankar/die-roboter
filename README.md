@@ -69,7 +69,7 @@ You can control the robot using the `setPivotValue` method:
 // - 'elbow_flex': Elbow joint (bend/extend)
 // - 'wrist_flex': Wrist pitch (up/down movement)
 // - 'wrist_roll': Wrist rotation
-// - 'gripper': Gripper (open/close)
+// - 'gripper': Gripper (open/close) - Note: Range is 0 to 100 (not -100 to 100)
 robot.setPivotValue('shoulder_pan', 50);
 
 // Set multiple pivots at once
@@ -78,7 +78,7 @@ robot.setPivotValues({
   'elbow_flex': -20,
   'wrist_flex': 10,
   'wrist_roll': 45,
-  'gripper': -80  // Close gripper
+  'gripper': 0  // Close gripper (gripper range is 0-100, where 0 is closed)
 });
 ```
 
