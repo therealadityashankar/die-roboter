@@ -1,0 +1,31 @@
+{
+  "name": "die-roboter-monorepo",
+  "version": "1.0.0",
+  "description": "TypeScript robot simulation library and examples",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspace=die-roboter",
+    "start": "npm run start --workspace=die-roboter-examples",
+    "dev": "npm run watch --workspace=die-roboter-examples",
+    "test": "npm run test --workspace=die-roboter",
+    "test:watch": "npm run test:watch --workspace=die-roboter",
+    "test:coverage": "npm run test:coverage --workspace=die-roboter"
+  },
+  "keywords": [
+    "robots",
+    "typescript",
+    "simulation"
+  ],
+  "author": "",
+  "license": "ISC",
+  "engines": {
+    "node": ">=14"
+  },
+  "dependencies": {
+    "parcel": "^2.15.4",
+    "urdf-loader": "^0.12.6"
+  }
+}

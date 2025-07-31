@@ -1,0 +1,26 @@
+{
+  "name": "die-roboter-examples",
+  "version": "1.0.0",
+  "description": "Examples for die-roboter library",
+  "private": true,
+  "scripts": {
+    "start": "npm run copy-robots && parcel index.html --open",
+    "start:no-browser": "npm run copy-robots && parcel index.html",
+    "build": "npm run copy-robots && parcel build index.html --dist-dir dist",
+    "copy-robots": "mkdir -p src/robots && cp -r ../die-roboter/src/robots/* src/robots/",
+    "watch": "nodemon --watch ../die-roboter/src --ext ts,js --exec \"npm run copy-robots\" & npm run start:no-browser",
+    "dev" : "npm run watch"
+  },
+  "keywords": [
+    "robots",
+    "examples",
+    "simulation"
+  ],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "nodemon": "^3.1.10",
+    "parcel": "^2.8.3",
+    "typescript": "^5.0.4"
+  }
+}
