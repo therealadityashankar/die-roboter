@@ -7,6 +7,6 @@ import * as URDFLoader from 'urdf-loader';
  */
 export class SO101 extends Robot {
   constructor(){
-    super("SO101","https://....(update url here)")
+    super("SO101","https://cdn.jsdelivr.net/gh/therealadityashankar/die-roboter/urdf/so101.urdf")
   }
 }

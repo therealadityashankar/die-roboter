@@ -669,50 +669,24 @@ function hmrAccept(bundle /*: ParcelRequire */ , id /*: string */ ) {
 },{}],"gNc1f":[function(require,module,exports,__globalThis) {
 // Import from the local copy of the robot files
 var _so101 = require("./robots/SO101");
-document.addEventListener('DOMContentLoaded', ()=>{
+var _three = require("three");
+const scene = new _three.Scene();
+const camera = new _three.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+const renderer = new _three.WebGLRenderer();
+renderer.setSize(window.innerWidth, window.innerHeight);
+document.body.appendChild(renderer.domElement);
+function animate() {
+    renderer.render(scene, camera);
+}
+renderer.setAnimationLoop(animate);
+document.addEventListener('DOMContentLoaded', async ()=>{
     // Create a new SO101 robot
-    const robot = new (0, _so101.SO101)('RoboFriend', 100);
-    // Get the robot display container
-    const robotContainer = document.getElementById('robot-display');
-    if (!robotContainer) {
-        console.error('Robot container not found');
-        return;
-    }
-    // Initial render
-    robot.render(robotContainer);
-    // Set up button event listeners
-    document.getElementById('power-on')?.addEventListener('click', ()=>{
-        robot.powerOn();
-        robot.render(robotContainer);
-    });
-    document.getElementById('power-off')?.addEventListener('click', ()=>{
-        robot.powerOff();
-        robot.render(robotContainer);
-    });
-    document.getElementById('move-forward')?.addEventListener('click', ()=>{
-        robot.move('forward', 5);
-        robot.render(robotContainer);
-    });
-    document.getElementById('move-backward')?.addEventListener('click', ()=>{
-        robot.move('backward', 5);
-        robot.render(robotContainer);
-    });
-    document.getElementById('move-left')?.addEventListener('click', ()=>{
-        robot.move('left', 5);
-        robot.render(robotContainer);
-    });
-    document.getElementById('move-right')?.addEventListener('click', ()=>{
-        robot.move('right', 5);
-        robot.render(robotContainer);
-    });
-    document.getElementById('recharge')?.addEventListener('click', ()=>{
-        robot.recharge(20);
-        robot.render(robotContainer);
-    });
-    console.log('Die Roboter example initialized');
+    const robot = new (0, _so101.SO101)();
+    await robot.load();
+    scene.add(robot);
 });
 
-},{"./robots/SO101":"7gnt8"}],"7gnt8":[function(require,module,exports,__globalThis) {
+},{"./robots/SO101":"7gnt8","three":"kCwwL"}],"7gnt8":[function(require,module,exports,__globalThis) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 /**
@@ -722,7 +696,7 @@ parcelHelpers.defineInteropFlag(exports);
 var _robot = require("./Robot");
 class SO101 extends (0, _robot.Robot) {
     constructor(){
-        super("SO101", "https://....(update url here)");
+        super("SO101", "https://cdn.jsdelivr.net/gh/therealadityashankar/die-roboter/urdf/so101.urdf");
     }
 }
 
@@ -764,8 +738,10 @@ parcelHelpers.defineInteropFlag(exports);
  */ parcelHelpers.export(exports, "Robot", ()=>Robot);
 var _urdfLoader = require("urdf-loader");
 var _urdfLoaderDefault = parcelHelpers.interopDefault(_urdfLoader);
-class Robot {
+var _three = require("three");
+class Robot extends _three.Object3D {
     constructor(name, modelPath){
+        super();
         this.name = name;
         this.modelPath = modelPath;
         this.robot = null;
@@ -779,11 +755,12 @@ class Robot {
     }
     async loadModel(options) {
         this._initializationStatus = "loading";
-        const loader = new (0, _urdfLoaderDefault.default)(...options.urdfLoaderOptions);
-        // @ts-ignore
-        const robot = await loader.loadAsync(this.model);
+        const loader = new (0, _urdfLoaderDefault.default)(...options?.urdfLoaderOptions);
+        const robot = await loader.loadAsync(this.modelPath);
         this.robot = robot;
         this._initializationStatus = "initialized";
+        // add it for threejs
+        this.add(robot);
         return robot;
     }
     /**
@@ -800,7 +777,7 @@ class Robot {
     }
 }
 
-},{"urdf-loader":"b5flA","@parcel/transformer-js/src/esmodule-helpers.js":"aNAmS"}],"b5flA":[function(require,module,exports,__globalThis) {
+},{"urdf-loader":"b5flA","@parcel/transformer-js/src/esmodule-helpers.js":"aNAmS","three":"kCwwL"}],"b5flA":[function(require,module,exports,__globalThis) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 var _three = require("three");
