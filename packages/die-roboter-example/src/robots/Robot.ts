@@ -29,7 +29,8 @@ export abstract class Robot extends THREE.Object3D {
   
   async loadModel(options?: { urdfLoaderOptions: any }){
     this._initializationStatus = "loading"
-    const loader = new URDFLoader(...options?.urdfLoaderOptions);
+    const urdfLoaderOptions = options?.urdfLoaderOptions || []
+    const loader = new URDFLoader(...urdfLoaderOptions);
     const robot  = await loader.loadAsync(this.modelPath)
     this.robot = robot;
 

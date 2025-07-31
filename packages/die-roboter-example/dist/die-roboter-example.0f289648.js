@@ -755,7 +755,8 @@ class Robot extends _three.Object3D {
     }
     async loadModel(options) {
         this._initializationStatus = "loading";
-        const loader = new (0, _urdfLoaderDefault.default)(...options?.urdfLoaderOptions);
+        const urdfLoaderOptions = options?.urdfLoaderOptions || [];
+        const loader = new (0, _urdfLoaderDefault.default)(...urdfLoaderOptions);
         const robot = await loader.loadAsync(this.modelPath);
         this.robot = robot;
         this._initializationStatus = "initialized";
