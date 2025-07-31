@@ -12,7 +12,8 @@
     "dev": "npm run watch --workspace=die-roboter-examples",
     "test": "npm run test --workspace=die-roboter",
     "test:watch": "npm run test:watch --workspace=die-roboter",
-    "test:coverage": "npm run test:coverage --workspace=die-roboter"
+    "test:coverage": "npm run test:coverage --workspace=die-roboter",
+    "publish": "npm run publish --workspace=die-roboter"
   },
   "keywords": [
     "robots",
@@ -20,7 +21,7 @@
     "simulation"
   ],
   "author": "",
-  "license": "ISC",
+  "license": "Apache-2.0",
   "engines": {
     "node": ">=14"
   },

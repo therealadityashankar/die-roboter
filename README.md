@@ -1,102 +1,83 @@
 # Die Roboter
 
-A TypeScript project for simulating and running various robots in JavaScript.
+A TypeScript library for simulating and controlling robot arms with Three.js.
 
-## Current Robots
-
-- **SO101** - The first robot implementation
-
-## Project Structure
-
-This project uses npm workspaces to separate the library and examples:
-
-```
-die-roboter/
-├── packages/
-│   ├── die-roboter/            # Main library package
-│   │   ├── src/                # Source code
-│   │   │   ├── robots/         # Robot implementations
-│   │   │   └── index.ts        # Main entry point
-│   │   └── dist/               # Compiled JavaScript (generated)
-│   └── die-roboter-examples/   # Examples package
-│       ├── src/                # Example source code
-│       │   └── robots/         # Copy of robot implementations for development
-│       └── index.html          # Example HTML page
-└── __tests__/                  # Test files (to be added later)
-```
-
-## Getting Started
-
-### Prerequisites
-
-- Node.js (v24 or higher)
-- npm
-
-### Installation
+## Installation
 
 ```bash
-# Clone the repository
-git clone <repository-url>
-cd die-roboter
-
-# Install dependencies for all workspaces
-npm install
+npm install die-roboter
 ```
 
-### Development
+## Usage
 
-```bash
-# Run the library in development mode with TypeScript watch mode
-npm run dev
+The library provides robot models that can be controlled through a simple pivot mapping system. Each pivot maps user-friendly ranges (like -100 to 100) to actual joint limits from the robot's URDF model.
 
-# Run the browser example with Parcel dev server
-npm run start
+## Minimal Example
 
-# Build the library
-npm run build
-```
+```javascript
+import * as THREE from 'three';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
+import { SO101 } from 'die-roboter';
 
-### Browser Examples
+// Setup scene
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+camera.position.set(30, 30, 30);
 
-The project includes browser examples that demonstrate the robots in action:
+// Setup renderer
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+document.getElementById('robot-view').appendChild(renderer.domElement);
 
-1. Run the Parcel development server:
-   ```bash
-   npm run start
-   ```
+// Add controls and lighting
+const controls = new OrbitControls(camera, renderer.domElement);
+scene.add(new THREE.AmbientLight(0xffffff, 0.6));
 
-2. Open your browser at the URL shown in the terminal (usually `http://localhost:1234`) to see the SO101 robot demo.
+// Create robot
+const robot = new SO101();
+await robot.loadModel();
+scene.add(robot);
 
-The examples use Parcel for bundling and support hot module reloading for a smooth development experience.
+// Animation loop
+function animate() {
+  requestAnimationFrame(animate);
+  controls.update();
+  renderer.render(scene, camera);
+}
+animate();
 
-### Working with Workspaces
+// Handle window resize
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
 
-This project uses npm workspaces to manage the library and examples separately:
+## Controlling the Robot
 
-```bash
-# Run commands in the library package
-npm run build --workspace=die-roboter
+You can control the robot using the `setPivotValue` method:
 
-# Run commands in the examples package
-npm run start --workspace=die-roboter-examples
+```javascript
+// Set shoulder pan to 50 (in the -100 to 100 range)
+// available options: 
+// - 'shoulder_pan': Base rotation (swivel)
+// - 'shoulder_lift': Shoulder joint (up/down movement)
+// - 'elbow_flex': Elbow joint (bend/extend)
+// - 'wrist_flex': Wrist pitch (up/down movement)
+// - 'wrist_roll': Wrist rotation
+// - 'gripper': Gripper (open/close)
+robot.setPivotValue('shoulder_pan', 50);
 
-# Install dependencies for a specific workspace
-npm install some-package --workspace=die-roboter
-```
-
-### Testing
-
-```bash
-# Run tests
-npm test
-
-# Run tests in watch mode
-npm run test:watch
-
-# Run tests with coverage
-npm run test:coverage
+// Set multiple pivots at once
+robot.setPivotValues({
+  'shoulder_lift': 30,
+  'elbow_flex': -20,
+  'wrist_flex': 10,
+  'wrist_roll': 45,
+  'gripper': -80  // Close gripper
+});
 ```
 
 ## License
 
-ISC
+Apache 2.0
