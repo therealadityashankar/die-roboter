@@ -9,10 +9,11 @@
   "scripts": {
     "build": "npm run build --workspace=die-roboter",
     "start": "npm run start --workspace=die-roboter-examples",
-    "dev": "npm run watch --workspace=die-roboter-examples",
+    "dev": "npm run dev --workspace=die-roboter-examples",
     "test": "npm run test --workspace=die-roboter",
     "test:watch": "npm run test:watch --workspace=die-roboter",
-    "test:coverage": "npm run test:coverage --workspace=die-roboter"
+    "test:coverage": "npm run test:coverage --workspace=die-roboter",
+    "up": "npm run up --workspace=die-roboter"
   },
   "keywords": [
     "robots",
@@ -25,7 +26,9 @@
     "node": ">=14"
   },
   "dependencies": {
+    "enable3d": "^0.26.1",
     "parcel": "^2.15.4",
-    "urdf-loader": "^0.12.6"
+    "urdf-loader": "^0.12.6",
+    "urdf-parser": "^0.0.1"
   }
 }

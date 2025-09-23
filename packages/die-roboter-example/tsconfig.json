@@ -10,6 +10,6 @@
     "outDir": "./dist",
     "allowJs": true
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "main.ts"],
   "exclude": ["node_modules", "dist"]
 }

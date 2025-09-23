@@ -1,6 +1,6 @@
 # Die Roboter
 
-A TypeScript library for simulating and controlling robot arms with Three.js.
+A TypeScript library for simulating and controlling robot arms with Three.js, designed to integrate with enable3d for real-time physics simulation.
 
 <p align="center">
   <img src="docs/SO101.png" alt="SO101 Robot" width="600">
@@ -12,6 +12,14 @@ A TypeScript library for simulating and controlling robot arms with Three.js.
 npm install die-roboter
 ```
 
+To use with physics (enable3d), also install the following packages:
+
+```bash
+npm install three enable3d @enable3d/ammo-physics urdf-loader
+```
+
+Note: You will need to serve the Ammo.js/WASM assets and pass their path to `PhysicsLoader` (see "Physics with enable3d" below).
+
 ## Usage
 
 The library provides robot models that can be controlled through a simple pivot mapping system. Each pivot maps user-friendly ranges (like -100 to 100) to actual joint limits from the robot's URDF model.
@@ -22,42 +30,90 @@ You can see this [example on codepen here](https://codepen.io/riversnow/pen/YPyN
 
 ```javascript
 import * as THREE from 'three';
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
-import { SO101 } from 'die-roboter';
+import { AmmoPhysics, PhysicsLoader } from '@enable3d/ammo-physics';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { SO101, createJointSliders } from 'die-roboter';
 
-// Setup scene
-const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-camera.position.set(30, 30, 30);
+function main() {
+  const MainScene = async () => {
+    // Scene
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0xf0f0f0);
 
-// Setup renderer
-const renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.setSize(window.innerWidth, window.innerHeight);
-document.getElementById('robot-view').appendChild(renderer.domElement);
+    // Physics (enable3d + Ammo.js)
+    const physics = new AmmoPhysics(scene, { parent: 'robot-view' });
+    // physics.debug.enable(true); // uncomment to visualize colliders
 
-// Add controls and lighting
-const controls = new OrbitControls(camera, renderer.domElement);
-scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+    // Camera
+    const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.set(47.564, 21.237, 43.435);
+    camera.lookAt(47.13, 20.922, 42.591);
 
-// Create robot
-const robot = new SO101();
-await robot.loadModel();
-scene.add(robot);
+    // Renderer
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(2, window.devicePixelRatio));
+    const container = document.getElementById('robot-view');
+    if (container) container.appendChild(renderer.domElement);
 
-// Animation loop
-function animate() {
-  requestAnimationFrame(animate);
-  controls.update();
-  renderer.render(scene, camera);
+    // Controls
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.target.set(19.94, 1.147, -10.304);
+    controls.update();
+
+    // Lights
+    scene.add(new THREE.HemisphereLight(0xffffff, 0x000000, 1));
+    scene.add(new THREE.AmbientLight(0xffffff, 1));
+
+    // Ground (static body)
+    physics.add.ground({ width: 20, height: 20, name: 'ground' });
+
+    // Example dynamic body
+    const cube = new THREE.Mesh(
+      new THREE.BoxGeometry(0.2, 0.2, 0.2),
+      new THREE.MeshLambertMaterial({ color: 0x00ff00 })
+    );
+    cube.userData.grippable = true;
+    cube.position.set(-4.5, 1, 0);
+    scene.add(cube);
+    physics.add.existing(cube);
+
+    // Robot
+    const robot = new SO101();
+    await robot.load({ scene, enable3dPhysicsObject: physics, position: new THREE.Vector3(0, 0.5, 0) });
+
+    // Optional: UI sliders to control joints
+    createJointSliders(robot, 'joint-sliders', {
+      shoulder_pan: 0,
+      shoulder_lift: 35,
+      elbow_flex: -25,
+      wrist_flex: 86,
+      wrist_roll: 59,
+      gripper: 67
+    });
+
+    const clock = new THREE.Clock();
+
+    function animate() {
+      physics.update(clock.getDelta() * 1000);
+      physics.updateDebugger();
+      renderer.render(scene, camera);
+      requestAnimationFrame(animate);
+    }
+    animate();
+
+    // Handle window resize
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+  };
+
+  PhysicsLoader('/ammo/kripken', () => MainScene());
 }
-animate();
 
-// Handle window resize
-window.addEventListener('resize', () => {
-  camera.aspect = window.innerWidth / window.innerHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
-});
+main();
 ```
 
 ## Controlling the Robot
@@ -83,7 +139,39 @@ robot.setPivotValues({
   'wrist_roll': 45,
   'gripper': 0  // Close gripper, 100 is completely open
 });
+
+// Access the pivot map to get information about all pivots
+const pivots = robot.pivots;
+console.log(pivots['shoulder_pan']); // Get info about a specific pivot
+console.log(pivots['shoulder_pan'].value); // Get current value of a pivot
 ```
+
+## Physics with enable3d
+
+This library is built to work seamlessly with [enable3d](https://enable3d.io/) to provide real-time physics simulation via Ammo.js/WASM. Internally, links use Three.js meshes as physics proxies and are registered into the physics world when you call `robot.load({ scene, enable3dPhysicsObject: physics, ... })`.
+
+To enable physics in your app:
+
+- Ensure you have installed the physics dependencies listed above.
+- Serve the Ammo assets and point `PhysicsLoader` to them. For example, if you copy the Ammo build to `/public/ammo/kripken/`, initialize like this:
+
+```javascript
+import { PhysicsLoader } from '@enable3d/ammo-physics';
+PhysicsLoader('/ammo/kripken', () => MainScene());
+```
+
+- Include the following containers in your HTML so the renderer and sliders have a place to mount:
+
+```html
+<div id="robot-view"></div>
+<div id="joint-sliders"></div>
+```
+
+Tip: If you use a bundler, make sure the Ammo assets are copied to your build output. For example, with Parcel you can copy static files from a `static/` folder to `dist/` using `parcel-reporter-static-files-copy`.
+
+## Acknowledgement
+
+The /URDF part of the code is taken from https://github.com/julien-blanchon/RobotHub-Frontend/tree/main/src/lib/components/3d/elements/robot/URDF
 
 ## License
 

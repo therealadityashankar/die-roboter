@@ -17,7 +17,8 @@
     "prepare-docs": "cp ../../README.md . && cp ../../LICENSE . && cp -r ../../docs .",
     "cleanup-docs": "rm -rf ./README.md ./LICENSE ./docs",
     "prepublishOnly": "npm run build && npm run prepare-docs",
-    "postpublish": "npm run cleanup-docs"
+    "postpublish": "npm run cleanup-docs",
+    "up": "npm version minor && npm publish"
   },
   "repository": {
     "type": "git",
@@ -39,17 +40,20 @@
   },
   "homepage": "https://github.com/therealadityashankar/die-roboter#readme",
   "dependencies": {
+    "@dimforge/rapier3d": "^0.18.0",
+    "@enable3d/ammo-physics": "^0.26.1",
+    "enable3d": "^0.26.1",
+    "three": "^0.171.0",
     "urdf-loader": "^0.12.6"
   },
   "peerDependencies": {
-    "three": "^0.150.0"
+    "three": "^0.171.0"
   },
   "devDependencies": {
     "@types/jest": "^29.5.0",
     "@types/node": "^18.15.11",
     "jest": "^29.5.0",
     "ts-jest": "^29.1.0",
-    "typescript": "^5.0.4",
-    "three": "^0.150.0"
+    "typescript": "^5.0.4"
   }
 }
