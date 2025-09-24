@@ -1,6 +1,6 @@
 
 import * as THREE from 'three'
-import { AmmoPhysics, PhysicsLoader } from '@enable3d/ammo-physics'
+import { AmmoPhysics, ExtendedMesh, PhysicsLoader } from '@enable3d/ammo-physics'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { SO101, createJointSliders } from '../die-roboter/src';
 
@@ -44,7 +44,7 @@ const MainScene = async () => {
   // green sphere
   const geometry = new THREE.BoxGeometry(0.2, 0.2, 0.2)
   const material = new THREE.MeshLambertMaterial({ color: 0x00ff00 })
-  const cube = new THREE.Mesh(geometry, material)
+  const cube = new ExtendedMesh(geometry, material)
   cube.userData.grippable = true
   cube.position.set(-4.5, 1, 0)
   scene.add(cube)

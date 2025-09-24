@@ -6,7 +6,7 @@ A TypeScript library for simulating and controlling robot arms with Three.js, de
   <img src="docs/SO101.png" alt="SO101 Robot" width="600">
 </p>
 
-## Installation
+## Setup
 
 ```bash
 npm install die-roboter
@@ -18,7 +18,71 @@ To use with physics (enable3d), also install the following packages:
 npm install three enable3d @enable3d/ammo-physics urdf-loader
 ```
 
-Note: You will need to serve the Ammo.js/WASM assets and pass their path to `PhysicsLoader` (see "Physics with enable3d" below).
+### 1) Copy the Ammo assets
+
+You need the Ammo.js/WASM files available at runtime (served from `/ammo/kripken`).
+
+- Copy from this repository’s prepared folder:
+
+Source: https://github.com/therealadityashankar/die-roboter/tree/main/packages/die-roboter-example/static/ammo
+
+Example commands to fetch just that folder:
+
+```bash
+# using git (shallow clone + copy)
+git clone --depth=1 https://github.com/therealadityashankar/die-roboter tmp-die-roboter
+mkdir -p static
+cp -R tmp-die-roboter/packages/die-roboter-example/static/ammo static/ammo
+rm -rf tmp-die-roboter
+```
+
+This will result in a structure like:
+
+```
+static/
+  ammo/
+    kripken/
+      ammo.js
+      ammo.wasm.wasm
+      ...
+```
+
+### 2) Parcel setup to serve static assets
+
+Ensure Parcel copies `static/` to your build output. One simple approach is to use `parcel-reporter-static-files-copy` (already used in the example app):
+
+1. Install the reporter (if not already):
+
+```bash
+npm install -D parcel-reporter-static-files-copy
+```
+
+2. Add a `.parcelrc` with the reporter:
+
+```json
+{
+  "extends": ["@parcel/config-default"],
+  "reporters": ["...", "parcel-reporter-static-files-copy"]
+}
+```
+
+3. Use Parcel scripts, similar to the example:
+
+```json
+{
+  "scripts": {
+    "start": "parcel index.html --open",
+    "start:no-browser": "parcel index.html"
+  }
+}
+```
+
+With the above, everything inside `static/` (including `static/ammo/kripken`) is copied to the output, so you can initialize physics with:
+
+```ts
+import { PhysicsLoader } from '@enable3d/ammo-physics'
+PhysicsLoader('/ammo/kripken', () => MainScene())
+```
 
 ## Usage
 

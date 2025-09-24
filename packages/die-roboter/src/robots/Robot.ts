@@ -1,5 +1,5 @@
 import URDFLoader, { URDFRobot } from 'urdf-loader';
-import { ExtendedObject3D, THREE } from 'enable3d';
+import { ExtendedMesh, ExtendedObject3D, THREE } from 'enable3d';
 import { Object3D } from 'three';
 
 // Define the base structure for a pivot without mapped values
@@ -45,7 +45,7 @@ type RobotLoaderOptions = {
 };
 
 export interface LinkPhysics{
-  physicsMesh: THREE.Object3D
+  physicsMesh: THREE.Mesh
   gripper_part_a?: boolean
   gripper_part_b?: boolean
 }
@@ -260,20 +260,21 @@ export abstract class Robot extends THREE.Object3D {
         let physics = linkPhysicsMap[linkName]
         let compoundBox = { shape: 'box', width: 0.01, height: 0.01, depth: 0.01, x:0, y:0, z:0 }
 
+        // @ts-expect-error because parameters does exist for...cubes, not sure why it isn't properly typed
         compoundBox.width = physics.physicsMesh.geometry.parameters.width*0.1
+        // @ts-expect-error because parameters does exist for...cubes, not sure why it isn't properly typed
         compoundBox.height = physics.physicsMesh.geometry.parameters.height*0.1
+        // @ts-expect-error because parameters does exist for...cubes, not sure why it isn't properly typed
         compoundBox.depth = physics.physicsMesh.geometry.parameters.depth*0.1
         compoundBox.x = physics.physicsMesh.position.x*0.1
         compoundBox.y = physics.physicsMesh.position.y*0.1
         compoundBox.z = physics.physicsMesh.position.z*0.1
 
-        if(physics.mass) compoundBox.mass = physics.mass
         enable3dObj.add.existing(link, {compound : [compoundBox]})
 
-        const body = link.body
-
+        // typecasted as enable3dObj.add.existing adds the body property to the object
+        const body = (link as unknown as ExtendedMesh).body
         body.setCollisionFlags(2)
-        body.setFriction(physics.friction || 0)
 
         
         if(physics.gripper_part_a){
@@ -357,7 +358,7 @@ export abstract class Robot extends THREE.Object3D {
 
   updateGrippedObjectPositions(){
     for(let [obj_name, details] of this.gripped_objects.entries()){
-      let object = details.object as Object3D
+      let object = details.object as ExtendedObject3D
       const gripperAWorldPosition = new THREE.Vector3()
       const gripperAWorldQuat = new THREE.Quaternion();
   
@@ -383,7 +384,9 @@ export abstract class Robot extends THREE.Object3D {
    */
   static markLinksAsNeedingPhysicsUpdate(obj : URDFRobot){
     for(let [_, link] of Object.entries(obj.links)){
+      // @ts-expect-error enable3dObj.add.existing adds the body property to the object
       if(link.body){
+      // @ts-expect-error enable3dObj.add.existing adds the body property to the object
         link.body.needUpdate = true;
       }
     }

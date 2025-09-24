@@ -159,18 +159,19 @@ class Robot extends enable3d_1.THREE.Object3D {
             if (linkPhysicsMap[linkName]) {
                 let physics = linkPhysicsMap[linkName];
                 let compoundBox = { shape: 'box', width: 0.01, height: 0.01, depth: 0.01, x: 0, y: 0, z: 0 };
+                // @ts-expect-error because parameters does exist for...cubes, not sure why it isn't properly typed
                 compoundBox.width = physics.physicsMesh.geometry.parameters.width * 0.1;
+                // @ts-expect-error because parameters does exist for...cubes, not sure why it isn't properly typed
                 compoundBox.height = physics.physicsMesh.geometry.parameters.height * 0.1;
+                // @ts-expect-error because parameters does exist for...cubes, not sure why it isn't properly typed
                 compoundBox.depth = physics.physicsMesh.geometry.parameters.depth * 0.1;
                 compoundBox.x = physics.physicsMesh.position.x * 0.1;
                 compoundBox.y = physics.physicsMesh.position.y * 0.1;
                 compoundBox.z = physics.physicsMesh.position.z * 0.1;
-                if (physics.mass)
-                    compoundBox.mass = physics.mass;
                 enable3dObj.add.existing(link, { compound: [compoundBox] });
+                // typecasted as enable3dObj.add.existing adds the body property to the object
                 const body = link.body;
                 body.setCollisionFlags(2);
-                body.setFriction(physics.friction || 0);
                 if (physics.gripper_part_a) {
                     this.gripper_a = link;
                     body.on.collision((otherObject, event) => {
@@ -262,7 +263,9 @@ class Robot extends enable3d_1.THREE.Object3D {
      */
     static markLinksAsNeedingPhysicsUpdate(obj) {
         for (let [_, link] of Object.entries(obj.links)) {
+            // @ts-expect-error enable3dObj.add.existing adds the body property to the object
             if (link.body) {
+                // @ts-expect-error enable3dObj.add.existing adds the body property to the object
                 link.body.needUpdate = true;
             }
         }
