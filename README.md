@@ -3,7 +3,7 @@
 A TypeScript library for simulating and controlling robot arms with Three.js, designed to integrate with enable3d for real-time physics simulation.
 
 <p align="center">
-  <img src="docs/SO101.png" alt="SO101 Robot" width="600">
+  <img src="docs-files/SO101.png" alt="SO101 Robot" width="600">
 </p>
 
 ## Setup
