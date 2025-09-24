@@ -86,5 +86,5 @@ const MainScene = async () => {
 }
 
 // load it with the current url + /ammo/kripken
-PhysicsLoader(window.location.origin + '/ammo/kripken', () => MainScene())
+PhysicsLoader(window.location.href + 'ammo/kripken', () => MainScene())
 console.log(`three.js version "${THREE.REVISION}"`)
