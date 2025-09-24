@@ -5,7 +5,9 @@
   "private": true,
   "scripts": {
     "start": "rm -rf .parcel-cache && parcel index.html --open",
-    "start:no-browser": "rm -rf .parcel-cache &&  parcel index.html"
+    "start:no-browser": "rm -rf .parcel-cache &&  parcel index.html",
+    "dev": "sh -c 'parcel watch index.html & nodemon -q -w dist -e html,js,css -x \"npm run sync-docs\"'",
+    "sync-docs": "rm -rf ../../docs && cp -R dist ../../docs && sed -i '' 's|<script type=\"module\" src=\"[^\"]*\"></script>|<script type=\"module\" src=\"/die-roboter/die-roboter-example.8ed14f75.js\"></script>|' ../../docs/index.html"
   },
   "keywords": [
     "robots",
