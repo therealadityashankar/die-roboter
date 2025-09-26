@@ -9,6 +9,14 @@ import * as THREE from 'three';
  * taken from here : https://github.com/huggingface/lerobot/blob/945e1ff2669bb7b31cb7fe6033fe9679767c2442/src/lerobot/teleoperators/so100_leader/so100_leader.py#L47
  */
 export class SO101 extends Robot {
+  static shoulderMesh : ExtendedMesh = SO101.createCubeMesh([.6,  .4,  .7],    [-0.25, 0, 0   ],   [0, 0, 0]);  
+  static upperArmMesh : ExtendedMesh = SO101.createCubeMesh([1.3, .3,  .7],    [-0.4, 0, 0.2  ],   [0, 0, 0]);
+  static lowerArmMesh : ExtendedMesh = SO101.createCubeMesh([1.3, .3,  .7],    [-0.4, 0, 0.2  ],   [0, 0, 0]);
+  static wristMesh    : ExtendedMesh = SO101.createCubeMesh([0.3, .8,  .7],    [0, -0.2, 0.2  ],   [0, 0, 0]);
+  static gripperMesh  : ExtendedMesh = SO101.createCubeMesh([0.2, .8,  .7],    [-0.2, 0, -0.65],   [0, 0, 0]);
+  static jawMesh      : ExtendedMesh = SO101.createCubeMesh([0.2, .8,  .7],    [0, -0.5, 0.2 ],   [0, 0, 0]);
+  static base         : ExtendedMesh = SO101.createCubeMesh([0.7, .7,  .7],    [0, 0, 0.34 ],   [0, 0, 0]);
+
   // Static method to create a cube mesh for physics representation
   static createCubeMesh(
     dimensions: number[], 
@@ -33,18 +41,7 @@ export class SO101 extends Robot {
   }
   constructor(){
     // Create a base physics representation for the robot
-    const basePhysicsRepresentation = SO101.createCubeMesh([1, 1, 1], [0, 1, 0], [0, 0, 0]);
-
-
-    // Create cube meshes for physics representations with position and rotation
-    const shoulderMesh = SO101.createCubeMesh([.6,  .4,  .7],    [-0.25, 0, 0   ],   [0, 0, 0]);  
-    const upperArmMesh = SO101.createCubeMesh([1.3, .3,  .7],    [-0.4, 0, 0.2  ],   [0, 0, 0]);
-    const lowerArmMesh = SO101.createCubeMesh([1.3, .3,  .7],    [-0.4, 0, 0.2  ],   [0, 0, 0]);
-    const wristMesh    = SO101.createCubeMesh([0.3, .8,  .7],    [0, -0.2, 0.2  ],   [0, 0, 0]);
-    const gripperMesh  = SO101.createCubeMesh([0.2, .8,  .7],    [-0.2, 0, -0.65],   [0, 0, 0]);
-    const jawMesh      = SO101.createCubeMesh([0.2, .8,  .7],    [0, -0.5, 0.2 ],   [0, 0, 0]);
-    const base         = SO101.createCubeMesh([0.7, .7,  .7],    [0, 0, 0.34 ],   [0, 0, 0]);
-    
+    const basePhysicsRepresentation = SO101.createCubeMesh([1, 1, 1], [0, 1, 0], [0, 0, 0]);    
     // Define the unmapped pivot map for SO101 robot with names from the UI and -100 to 100 range
     const unmappedPivotMap: UnmappedPivotMap = {
       'shoulder_pan': {
@@ -100,27 +97,27 @@ export class SO101 extends Robot {
     
     const linkPhysicsMap = {
       'shoulder': {
-        physicsMesh: shoulderMesh
+        physicsMesh: SO101.shoulderMesh
       },
       'upper_arm': {
-        physicsMesh: upperArmMesh
+        physicsMesh: SO101.upperArmMesh
       },
       'lower_arm': {
-        physicsMesh: lowerArmMesh
+        physicsMesh: SO101.lowerArmMesh
       },
       'wrist': {
-        physicsMesh: wristMesh
+        physicsMesh: SO101.wristMesh
       },
       'gripper': {
         gripper_part_a : true,
-        physicsMesh: gripperMesh
+        physicsMesh: SO101.gripperMesh
       },
       'moving_jaw_so101_v1': {
         gripper_part_b : true,
-        physicsMesh: jawMesh
+        physicsMesh: SO101.jawMesh
       },
       'baseframe': {
-        physicsMesh: base
+        physicsMesh: SO101.base
       }
     }
     // Call super with options object

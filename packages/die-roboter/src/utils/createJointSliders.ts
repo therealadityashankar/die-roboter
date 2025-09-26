@@ -21,6 +21,8 @@ export function createJointSliders(robot: Robot, containerId: string = 'joint-sl
   // Clear existing content
   container.innerHTML = '';
 
+  console.log("joint sliders pivotMap: ", robot.pivotMap);
+
   // Create sliders for each pivot
   Object.entries(robot.pivotMap).forEach(([key, pivot]) => {
     if (!pivot.physicsRepresentation) return;

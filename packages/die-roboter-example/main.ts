@@ -2,12 +2,13 @@
 import * as THREE from 'three'
 import { AmmoPhysics, ExtendedMesh, PhysicsLoader } from '@enable3d/ammo-physics'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import { SO101, createJointSliders } from '../die-roboter/src';
+import { SO101, LeKiwi, createJointSliders } from '../die-roboter/src';
 
 
 
 const MainScene = async () => {
-  const robot = new SO101()
+  const lerobot = new SO101()
+  const lekiwi = new LeKiwi()
   // scene
   const scene = new THREE.Scene()
   scene.background = new THREE.Color(0xf0f0f0)
@@ -60,13 +61,23 @@ const MainScene = async () => {
   // static ground
   physics.add.ground({ width: 20, height: 20, name: "ground" })
 
-  await robot.load({scene, enable3dPhysicsObject : physics, position : new THREE.Vector3(0, 0.5, 0)})
+  await lerobot.load({scene, enable3dPhysicsObject : physics, position : new THREE.Vector3(0, 0.5, 0)})
+  await lekiwi.load({scene, enable3dPhysicsObject : physics, position : new THREE.Vector3(5, 1, 0)})
 
   // clock
   const clock = new THREE.Clock()
 
   // Create joint sliders
-  createJointSliders(robot, 'joint-sliders', {
+  createJointSliders(lerobot, 'joint-sliders-so101', {
+    "shoulder_pan": 0.00,
+    "shoulder_lift": 35.00,
+    "elbow_flex": -25.00,
+    "wrist_flex": 86.00,
+    "wrist_roll": 59.00,
+    "gripper": 67.00
+  });
+
+  createJointSliders(lekiwi, 'joint-sliders-lekiwi', {
     "shoulder_pan": 0.00,
     "shoulder_lift": 35.00,
     "elbow_flex": -25.00,

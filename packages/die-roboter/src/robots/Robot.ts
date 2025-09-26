@@ -1,4 +1,4 @@
-import URDFLoader, { URDFRobot } from 'urdf-loader';
+import URDFLoader, { URDFRobot, URDFLink } from 'urdf-loader';
 import { ExtendedMesh, ExtendedObject3D, THREE } from 'enable3d';
 import { Object3D } from 'three';
 
@@ -45,7 +45,8 @@ type RobotLoaderOptions = {
 };
 
 export interface LinkPhysics{
-  physicsMesh: THREE.Mesh
+  physicsMesh?: THREE.Mesh
+  color?: THREE.Color
   gripper_part_a?: boolean
   gripper_part_b?: boolean
 }
@@ -208,13 +209,9 @@ export abstract class Robot extends THREE.Object3D {
     
     this.robot = robot;
 
-    // wait a second for stuff to load
-    // TODO : Change this to be an exponential backoff, or to have a different
-    // callback based system which actually checks when stuff has loaded
-    await new Promise(resolve => setTimeout(resolve, 1000))
-
     // Update the mapped joint limits in the pivots based on the loaded robot model
     if (robot.joints) {
+      console.log("robot.joints", robot.joints)
       Object.values(this.pivotMap).forEach(pivot => {
         const joint = robot.joints?.[pivot.jointName];
         if (joint) {
@@ -246,29 +243,70 @@ export abstract class Robot extends THREE.Object3D {
     this._initializationStatus = "initialized"
     options.scene.add(robot)
 
-    this.addPhysicsDefinitionsForObject(robot, options.enable3dPhysicsObject, this.linkPhysicsMap)
+    this.addPhysicsAndColorDefinitionsForObject(robot, options.enable3dPhysicsObject, this.linkPhysicsMap)
     return robot
+  }
+
+  // recursively set the color of all meshes in the object
+  static setMeshColor(object : any, color : THREE.Color){
+    console.log("setting color of object -", object)
+    for(let child of object.children){
+      console.log("child", child, "children of child", child.children)
+      if(child.isMesh){
+        console.log("setting color of mesh", child)
+        child.material.color.set(color)
+      }
+      Robot.setMeshColor(child, color)
+    }
+  }
+
+
+  // keep traversing the parent....the parents parent, recursively, until a URDFLink
+  // is reached, then return that link
+  static getURDFLinkForObject(object : any) : URDFLink | null{
+    if(object.isURDFLink){
+      return object
+    }
+
+    if(object.parent){ 
+      return this.getURDFLinkForObject(object.parent)
+    }
+
+    return null
   }
 
   /**
    * Traverses links, for links that have appropriate physics definitions
    * It adds appropriate physics bodies for them for the robot
    */
-  addPhysicsDefinitionsForObject(robot : URDFRobot, enable3dObj : any, linkPhysicsMap : LinkPhysicsMap){
+  addPhysicsAndColorDefinitionsForObject(robot : URDFRobot, enable3dObj : any, linkPhysicsMap : LinkPhysicsMap){
     for(let [linkName, link] of Object.entries(robot.links)){
       if(linkPhysicsMap[linkName]){
-        let physics = linkPhysicsMap[linkName]
+        let physicsAndColor = linkPhysicsMap[linkName]
         let compoundBox = { shape: 'box', width: 0.01, height: 0.01, depth: 0.01, x:0, y:0, z:0 }
 
-        // @ts-expect-error because parameters does exist for...cubes, not sure why it isn't properly typed
-        compoundBox.width = physics.physicsMesh.geometry.parameters.width*0.1
-        // @ts-expect-error because parameters does exist for...cubes, not sure why it isn't properly typed
-        compoundBox.height = physics.physicsMesh.geometry.parameters.height*0.1
-        // @ts-expect-error because parameters does exist for...cubes, not sure why it isn't properly typed
-        compoundBox.depth = physics.physicsMesh.geometry.parameters.depth*0.1
-        compoundBox.x = physics.physicsMesh.position.x*0.1
-        compoundBox.y = physics.physicsMesh.position.y*0.1
-        compoundBox.z = physics.physicsMesh.position.z*0.1
+        if(physicsAndColor.physicsMesh){
+          // @ts-expect-error because parameters does exist for...cubes, not sure why it isn't properly typed
+          compoundBox.width = physicsAndColor.physicsMesh.geometry.parameters.width*0.1
+          // @ts-expect-error because parameters does exist for...cubes, not sure why it isn't properly typed
+          compoundBox.height = physicsAndColor.physicsMesh.geometry.parameters.height*0.1
+          // @ts-expect-error because parameters does exist for...cubes, not sure why it isn't properly typed
+          compoundBox.depth = physicsAndColor.physicsMesh.geometry.parameters.depth*0.1
+          compoundBox.x = physicsAndColor.physicsMesh.position.x*0.1
+          compoundBox.y = physicsAndColor.physicsMesh.position.y*0.1
+          compoundBox.z = physicsAndColor.physicsMesh.position.z*0.1
+        }
+
+        if(physicsAndColor.color){
+          // temporary workaround, set the color late
+          // via a settimeout, as the meshes load late
+          // TODO : fix this, make it better somehow...maybe with exponential
+          // backoff or a better callback system
+          console.log("omg", linkName, "has a color!", link)
+          setTimeout(() => {
+            Robot.setMeshColor(link, physicsAndColor.color as THREE.Color)
+          }, 3000)
+        }
 
         enable3dObj.add.existing(link, {compound : [compoundBox]})
 
@@ -277,7 +315,7 @@ export abstract class Robot extends THREE.Object3D {
         body.setCollisionFlags(2)
 
         
-        if(physics.gripper_part_a){
+        if(physicsAndColor.gripper_part_a){
           this.gripper_a = link;
 
           body.on.collision((otherObject : any, event : any) => {
@@ -302,7 +340,7 @@ export abstract class Robot extends THREE.Object3D {
           })
         }
         
-        if(physics.gripper_part_b){
+        if(physicsAndColor.gripper_part_b){
           body.on.collision((otherObject : any, event : any) => {
             if (otherObject.name !== 'ground' && otherObject.userData.grippable === true) {              if(event == "start"){
                 this.gripper_b_touched_objects.add(otherObject.name)

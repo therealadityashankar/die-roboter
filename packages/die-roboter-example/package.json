@@ -5,9 +5,9 @@
   "private": true,
   "scripts": {
     "start": "rm -rf .parcel-cache && parcel index.html --open",
-    "start:no-browser": "rm -rf .parcel-cache &&  parcel index.html",
-    "dev": "sh -c 'parcel watch index.html & nodemon -q -w dist -e html,js,css -x \"npm run sync-docs\"'",
-    "sync-docs": "rm -rf ../../docs && cp -R dist ../../docs && sed -i '' 's|<script type=\"module\" src=\"[^\"]*\"></script>|<script type=\"module\" src=\"/die-roboter/die-roboter-example.8ed14f75.js\"></script>|' ../../docs/index.html"
+    "start:no-browser": "rm -rf .parcel-cache && parcel index.html",
+    "dev": "concurrently -n PARCEL,NODEMON -c bgBlue.bold,bgGreen.bold \"parcel watch index.html\" \"nodemon --quiet -w dist -e js,css,html --delay 200ms -x 'npm run sync-docs'\"",
+    "sync-docs": "{ rm -rf ../../docs && cp -R dist ../../docs && sed -i '' 's|<script type=\"module\" src=\"[^\"]*\"></script>|<script type=\"module\" src=\"/die-roboter/die-roboter-example.8ed14f75.js\"></script>|' ../../docs/index.html; } >/dev/null 2>&1"
   },
   "keywords": [
     "robots",
@@ -18,6 +18,7 @@
   "license": "Apache-2.0",
   "devDependencies": {
     "@types/three": "^0.171.0",
+    "concurrently": "^9.2.1",
     "nodemon": "^3.1.10",
     "parcel": "^2.8.3",
     "parcel-reporter-static-files-copy": "^1.5.3",
