@@ -36,16 +36,6 @@ export class LeKiwi extends Robot {
     // Create a base physics representation for the robot
     const basePhysicsRepresentation = LeKiwi.createCubeMesh([1, 1, 1], [0, 1, 0], [0, 0, 0]);
 
-
-    // Create cube meshes for physics representations with position and rotation
-    const shoulderMesh = LeKiwi.createCubeMesh([.6,  .4,  .7],    [-0.25, 0, 0   ],   [0, 0, 0]);  
-    const upperArmMesh = LeKiwi.createCubeMesh([1.3, .3,  .7],    [-0.4, 0, 0.2  ],   [0, 0, 0]);
-    const lowerArmMesh = LeKiwi.createCubeMesh([1.3, .3,  .7],    [-0.4, 0, 0.2  ],   [0, 0, 0]);
-    const wristMesh    = LeKiwi.createCubeMesh([0.3, .8,  .7],    [0, -0.2, 0.2  ],   [0, 0, 0]);
-    const gripperMesh  = LeKiwi.createCubeMesh([0.2, .8,  .7],    [-0.2, 0, -0.65],   [0, 0, 0]);
-    const jawMesh      = LeKiwi.createCubeMesh([0.2, .8,  .7],    [0, -0.5, 0.2 ],   [0, 0, 0]);
-    const base         = LeKiwi.createCubeMesh([0.7, .7,  .7],    [0, 0, 0.34 ],   [0, 0, 0]);
-    
     // SO101 has the same joints as LeKiwi, but with different names
     const unmappedPivotMap: UnmappedPivotMap = {
       'gripper': { // done - works
@@ -97,13 +87,52 @@ export class LeKiwi extends Robot {
         physicsRepresentation: {},
       },
     }; 
+
+    const jawParam = SO101.jawMesh.geometry.parameters
+    const clonedJaw = LeKiwi.createCubeMesh([jawParam.width, jawParam.depth, jawParam.height], [SO101.jawMesh.position.x, SO101.jawMesh.position.y + 0.08, SO101.jawMesh.position.z - 0.05], [0, 0, 0]);
+
+    const clonedWristMeshParams = SO101.wristMesh.geometry.parameters
+    const clonedWristMesh = LeKiwi.createCubeMesh([clonedWristMeshParams.depth, clonedWristMeshParams.width, clonedWristMeshParams.height], [SO101.wristMesh.position.x - 0.04, SO101.wristMesh.position.y, SO101.wristMesh.position.z -0.05], [0, 0, 0]);
+
+    const lowerArmParam = SO101.lowerArmMesh.geometry.parameters
+    const clonedLowerArmMesh = LeKiwi.createCubeMesh([lowerArmParam.depth, lowerArmParam.width, lowerArmParam.height], [SO101.lowerArmMesh.position.x + 0.015, SO101.lowerArmMesh.position.y - 0.05, SO101.lowerArmMesh.position.z - 0.015], [0, 0, 0]);
+
+    const upperArmParam = SO101.upperArmMesh.geometry.parameters
+    const clonedUpperArmMesh = LeKiwi.createCubeMesh([upperArmParam.depth, upperArmParam.width, upperArmParam.height], [SO101.upperArmMesh.position.x + 0.015, SO101.upperArmMesh.position.y + 0.05, SO101.upperArmMesh.position.z - 0.015], [0, 0, 0]);
     
+    const gripperParam = SO101.gripperMesh.geometry.parameters
+    const clonedGripperMesh = LeKiwi.createCubeMesh([gripperParam.width, gripperParam.depth, gripperParam.height], [SO101.gripperMesh.position.x + 0.015, SO101.gripperMesh.position.y + 0.04, SO101.gripperMesh.position.z + 0.025], [0, 0, 0]);
+    
+    const shoulderParam = SO101.shoulderMesh.geometry.parameters
+    const clonedShoulderMesh = LeKiwi.createCubeMesh([shoulderParam.width, shoulderParam.height, shoulderParam.depth], [SO101.shoulderMesh.position.x + 0.03, SO101.shoulderMesh.position.y - 0.03, SO101.shoulderMesh.position.z], [0, 0, 0]);
     // SO101 has the same links as LeKiwi, but with different names
     const linkPhysicsMap = {
       'Moving_Jaw_08d-v1': {
-        physicsMesh: SO101.jawMesh,
+        physicsMesh: clonedJaw,
+        gripper_part_a: true,
         color: new THREE.Color(0x00ff00)
       },
+      'SO_ARM100_08k_116_Square-v1': {
+        physicsMesh: clonedLowerArmMesh,
+        color: new THREE.Color(0x0000ff)
+      },
+      'Rotation_Pitch_08i-v1': {
+        physicsMesh: clonedShoulderMesh,
+        color: new THREE.Color(0x00ff00)
+      },
+      'Wrist_Roll_Pitch_08i-v1': {
+        physicsMesh: clonedWristMesh,
+        color: new THREE.Color(0x00ff00)
+      },
+      'SO_ARM100_08k_Mirror-v1': {
+        physicsMesh: clonedUpperArmMesh,
+        color: new THREE.Color(0x00ff00)
+      },
+      'Wrist_Roll_08c-v1': {
+        gripper_part_b: true,
+        physicsMesh: clonedGripperMesh,
+        color: new THREE.Color(0xffff00)
+      }
     }
     // Call super with options object
     super({

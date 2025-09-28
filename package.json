@@ -29,6 +29,7 @@
     "enable3d": "^0.26.1",
     "parcel": "^2.15.4",
     "urdf-loader": "^0.12.6",
-    "urdf-parser": "^0.0.1"
+    "urdf-parser": "^0.0.1",
+    "virtual-gamepad-lib": "^0.3.3"
   }
 }

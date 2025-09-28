@@ -23,13 +23,13 @@ export class SO101 extends Robot {
     position?: [number, number, number], 
     rotation?: [number, number, number]
   ): ExtendedMesh {
-    const geometry = new THREE.BoxGeometry(dimensions[0], dimensions[1], dimensions[2]);
+    const geometry = new THREE.BoxGeometry(dimensions[0]*0.1, dimensions[1]*0.1, dimensions[2]*0.1);
     const material = new THREE.MeshBasicMaterial({ color: 0x00ff00, wireframe: true });
     const mesh = new ExtendedMesh(geometry, material);
     
     // Apply position if provided
     if (position) {
-      mesh.position.set(position[0], position[1], position[2]);
+      mesh.position.set(position[0]*0.1, position[1]*0.1, position[2]*0.1);
     }
     
     // Apply rotation if provided

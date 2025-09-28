@@ -249,11 +249,8 @@ export abstract class Robot extends THREE.Object3D {
 
   // recursively set the color of all meshes in the object
   static setMeshColor(object : any, color : THREE.Color){
-    console.log("setting color of object -", object)
     for(let child of object.children){
-      console.log("child", child, "children of child", child.children)
       if(child.isMesh){
-        console.log("setting color of mesh", child)
         child.material.color.set(color)
       }
       Robot.setMeshColor(child, color)
@@ -287,14 +284,14 @@ export abstract class Robot extends THREE.Object3D {
 
         if(physicsAndColor.physicsMesh){
           // @ts-expect-error because parameters does exist for...cubes, not sure why it isn't properly typed
-          compoundBox.width = physicsAndColor.physicsMesh.geometry.parameters.width*0.1
+          compoundBox.width = physicsAndColor.physicsMesh.geometry.parameters.width
           // @ts-expect-error because parameters does exist for...cubes, not sure why it isn't properly typed
-          compoundBox.height = physicsAndColor.physicsMesh.geometry.parameters.height*0.1
+          compoundBox.height = physicsAndColor.physicsMesh.geometry.parameters.height
           // @ts-expect-error because parameters does exist for...cubes, not sure why it isn't properly typed
-          compoundBox.depth = physicsAndColor.physicsMesh.geometry.parameters.depth*0.1
-          compoundBox.x = physicsAndColor.physicsMesh.position.x*0.1
-          compoundBox.y = physicsAndColor.physicsMesh.position.y*0.1
-          compoundBox.z = physicsAndColor.physicsMesh.position.z*0.1
+          compoundBox.depth = physicsAndColor.physicsMesh.geometry.parameters.depth
+          compoundBox.x = physicsAndColor.physicsMesh.position.x
+          compoundBox.y = physicsAndColor.physicsMesh.position.y
+          compoundBox.z = physicsAndColor.physicsMesh.position.z
         }
 
         if(physicsAndColor.color){

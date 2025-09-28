@@ -42,7 +42,18 @@ const MainScene = async () => {
   controls.target.set(19.940, 1.147, -10.304);
   controls.update()
 
-  // green sphere
+  // add 100 cubes of random colors
+  for (let i = 0; i < 100; i++) {
+    const geometry = new THREE.BoxGeometry(0.2, 0.2, 0.2)
+    const material = new THREE.MeshLambertMaterial({ color: Math.random() * 0xffffff })
+    const cube = new ExtendedMesh(geometry, material)
+    cube.userData.grippable = true
+    cube.position.set(Math.random() * 10 - 5, Math.random() * 10 - 5 + 30, Math.random() * 10 - 5)
+    scene.add(cube)
+    physics.add.existing(cube)
+  }
+
+  // add a cube
   const geometry = new THREE.BoxGeometry(0.2, 0.2, 0.2)
   const material = new THREE.MeshLambertMaterial({ color: 0x00ff00 })
   const cube = new ExtendedMesh(geometry, material)
@@ -85,6 +96,37 @@ const MainScene = async () => {
     "wrist_roll": 59.00,
     "gripper": 67.00
   });
+
+  // Tabs UI to switch between slider groups
+  const so101Tab = document.getElementById('tab-so101') as HTMLButtonElement | null;
+  const lekiwiTab = document.getElementById('tab-lekiwi') as HTMLButtonElement | null;
+  const so101Panel = document.getElementById('joint-sliders-so101');
+  const lekiwiPanel = document.getElementById('joint-sliders-lekiwi');
+
+  function setActiveTab(target: 'so101' | 'lekiwi') {
+    if (!so101Tab || !lekiwiTab || !so101Panel || !lekiwiPanel) return;
+    if (target === 'so101') {
+      so101Tab.classList.add('active');
+      so101Tab.setAttribute('aria-selected', 'true');
+      lekiwiTab.classList.remove('active');
+      lekiwiTab.setAttribute('aria-selected', 'false');
+      so101Panel.classList.add('active');
+      lekiwiPanel.classList.remove('active');
+    } else {
+      lekiwiTab.classList.add('active');
+      lekiwiTab.setAttribute('aria-selected', 'true');
+      so101Tab.classList.remove('active');
+      so101Tab.setAttribute('aria-selected', 'false');
+      lekiwiPanel.classList.add('active');
+      so101Panel.classList.remove('active');
+    }
+  }
+
+  so101Tab?.addEventListener('click', () => setActiveTab('so101'));
+  lekiwiTab?.addEventListener('click', () => setActiveTab('lekiwi'));
+
+  // Default to SO101 tab on load
+  setActiveTab('so101');
 
   // loop
   const animate = () => {
