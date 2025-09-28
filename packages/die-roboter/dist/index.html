@@ -171,6 +171,22 @@ input[type="range"] {
 .tab-panel.active {
   display: flex;
 }
+
+.attribution {
+  color: #666;
+  margin-top: 16px;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.attribution a {
+  color: #4caf50;
+  text-decoration: none;
+}
+
+.attribution a:hover {
+  text-decoration: underline;
+}
 </style>
 </head>
 <body>
@@ -187,6 +203,8 @@ input[type="range"] {
             
             <!-- Right panel with controls -->
             <div class="right-panel">
+                <div id="level-selector">
+                </div>
                 <div class="controls-container">
                     <h2>Joint Controls</h2>
                     <div class="tabs" role="tablist">
@@ -199,6 +217,13 @@ input[type="range"] {
                     <div id="joint-sliders-lekiwi" class="sliders-container tab-panel" role="tabpanel" aria-labelledby="tab-lekiwi">
                         <!-- Joint sliders will be added here dynamically -->
                     </div>
+                </div>
+                <div class="attribution" aria-label="attribution">
+                    <strong>Attribution</strong><br>
+                    Burger bun 3D model:
+                    <a href="https://sketchfab.com/3d-models/burger-bun-bread-1eb53bef512a48e5b61e934748201d4e" target="_blank" rel="noopener noreferrer">Burger bun bread (Sketchfab)</a><br>
+                    Burger patty 3D model:
+                    <a href="https://sketchfab.com/3d-models/cooked-burger-patty-meatball-fdeae6bf467f4ec2a42147cf877365c3" target="_blank" rel="noopener noreferrer">Cooked burger patty / meatball (Sketchfab)</a>
                 </div>
             </div>
         </div>

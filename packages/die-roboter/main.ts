@@ -3,7 +3,7 @@ import * as THREE from 'three'
 import { AmmoPhysics, ExtendedMesh, PhysicsLoader } from '@enable3d/ammo-physics'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { SO101, LeKiwi, createJointSliders } from '../die-roboter/src';
-
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 
 
 const MainScene = async () => {
@@ -33,6 +33,64 @@ const MainScene = async () => {
     container.appendChild(renderer.domElement)
   }
 
+  const loader = new GLTFLoader();
+
+
+  loader.load(
+    // resource URL
+    'burger-bun-bread/source/bun.glb',
+    // called when the resource is loaded
+    function ( gltf ) {
+
+      const obj = gltf.scene;
+
+      obj.position.set(-3, 3, -1)
+      obj.userData.grippable = true
+      scene.add( obj );
+      physics.add.existing(obj)
+
+      // clone and add the same patty inverted
+      const clone = obj.clone()
+
+      clone.position.set(-3, 3, 3)
+      clone.userData.grippable = true
+      scene.add( clone );
+      physics.add.existing(clone)
+    },
+    // called while loading is progressing
+    function ( xhr ) {
+      console.log( ( xhr.loaded / xhr.total * 100 ) + '% loaded' );
+    },
+    // called when loading has errors
+    function ( error ) {
+      console.log( 'An error happened' );
+    }
+  );
+
+  const pattyPath = 'cooked-burger-patty-meatball/source/cooked.glb'
+  loader.load(
+    // resource URL
+    pattyPath,
+    // called when the resource is loaded
+    function ( gltf ) {
+
+      const obj = gltf.scene;
+
+      obj.position.set(-3, 3, -4)
+      obj.userData.grippable = true
+      scene.add( obj );
+      physics.add.existing(obj)
+    },
+    // called while loading is progressing
+    function ( xhr ) {
+      console.log( ( xhr.loaded / xhr.total * 100 ) + '% loaded' );
+    },
+    // called when loading has errors
+    function ( error ) {
+      console.log( 'An error happened' );
+    }
+  );
+
   // dpr
   const DPR = window.devicePixelRatio
   renderer.setPixelRatio(Math.min(2, DPR))
@@ -42,7 +100,7 @@ const MainScene = async () => {
   controls.target.set(19.940, 1.147, -10.304);
   controls.update()
 
-  // add 100 cubes of random colors
+  /*/ add 100 cubes of random colors
   for (let i = 0; i < 100; i++) {
     const geometry = new THREE.BoxGeometry(0.2, 0.2, 0.2)
     const material = new THREE.MeshLambertMaterial({ color: Math.random() * 0xffffff })
@@ -51,16 +109,7 @@ const MainScene = async () => {
     cube.position.set(Math.random() * 10 - 5, Math.random() * 10 - 5 + 30, Math.random() * 10 - 5)
     scene.add(cube)
     physics.add.existing(cube)
-  }
-
-  // add a cube
-  const geometry = new THREE.BoxGeometry(0.2, 0.2, 0.2)
-  const material = new THREE.MeshLambertMaterial({ color: 0x00ff00 })
-  const cube = new ExtendedMesh(geometry, material)
-  cube.userData.grippable = true
-  cube.position.set(-4.5, 1, 0)
-  scene.add(cube)
-  physics.add.existing(cube)
+  }*/
 
   // light
   scene.add(new THREE.HemisphereLight(0xffffff, 0x000000, 1))

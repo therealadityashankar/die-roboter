@@ -671,6 +671,7 @@ var _three = require("three");
 var _ammoPhysics = require("@enable3d/ammo-physics");
 var _orbitControlsJs = require("three/examples/jsm/controls/OrbitControls.js");
 var _src = require("../die-roboter/src");
+var _gltfloaderJs = require("three/examples/jsm/loaders/GLTFLoader.js");
 const MainScene = async ()=>{
     const lerobot = new (0, _src.SO101)();
     const lekiwi = new (0, _src.LeKiwi)();
@@ -693,6 +694,44 @@ const MainScene = async ()=>{
     renderer.setSize(window.innerWidth, window.innerHeight);
     const container = document.getElementById('robot-view');
     if (container) container.appendChild(renderer.domElement);
+    const loader = new (0, _gltfloaderJs.GLTFLoader)();
+    loader.load(// resource URL
+    'burger-bun-bread/source/bun.glb', // called when the resource is loaded
+    function(gltf) {
+        const obj = gltf.scene;
+        obj.position.set(-3, 3, -1);
+        obj.userData.grippable = true;
+        scene.add(obj);
+        physics.add.existing(obj);
+        // clone and add the same patty inverted
+        const clone = obj.clone();
+        clone.position.set(-3, 3, 3);
+        clone.userData.grippable = true;
+        scene.add(clone);
+        physics.add.existing(clone);
+    }, // called while loading is progressing
+    function(xhr) {
+        console.log(xhr.loaded / xhr.total * 100 + '% loaded');
+    }, // called when loading has errors
+    function(error) {
+        console.log('An error happened');
+    });
+    const pattyPath = 'cooked-burger-patty-meatball/source/cooked.glb';
+    loader.load(// resource URL
+    pattyPath, // called when the resource is loaded
+    function(gltf) {
+        const obj = gltf.scene;
+        obj.position.set(-3, 3, -4);
+        obj.userData.grippable = true;
+        scene.add(obj);
+        physics.add.existing(obj);
+    }, // called while loading is progressing
+    function(xhr) {
+        console.log(xhr.loaded / xhr.total * 100 + '% loaded');
+    }, // called when loading has errors
+    function(error) {
+        console.log('An error happened');
+    });
     // dpr
     const DPR = window.devicePixelRatio;
     renderer.setPixelRatio(Math.min(2, DPR));
@@ -700,29 +739,16 @@ const MainScene = async ()=>{
     const controls = new (0, _orbitControlsJs.OrbitControls)(camera, renderer.domElement);
     controls.target.set(19.940, 1.147, -10.304);
     controls.update();
-    // add 100 cubes of random colors
-    for(let i = 0; i < 100; i++){
-        const geometry = new _three.BoxGeometry(0.2, 0.2, 0.2);
-        const material = new _three.MeshLambertMaterial({
-            color: Math.random() * 0xffffff
-        });
-        const cube = new (0, _ammoPhysics.ExtendedMesh)(geometry, material);
-        cube.userData.grippable = true;
-        cube.position.set(Math.random() * 10 - 5, Math.random() * 10 - 5 + 30, Math.random() * 10 - 5);
-        scene.add(cube);
-        physics.add.existing(cube);
-    }
-    // add a cube
-    const geometry = new _three.BoxGeometry(0.2, 0.2, 0.2);
-    const material = new _three.MeshLambertMaterial({
-        color: 0x00ff00
-    });
-    const cube = new (0, _ammoPhysics.ExtendedMesh)(geometry, material);
-    cube.userData.grippable = true;
-    cube.position.set(-4.5, 1, 0);
-    scene.add(cube);
-    physics.add.existing(cube);
-    // light
+    /*/ add 100 cubes of random colors
+  for (let i = 0; i < 100; i++) {
+    const geometry = new THREE.BoxGeometry(0.2, 0.2, 0.2)
+    const material = new THREE.MeshLambertMaterial({ color: Math.random() * 0xffffff })
+    const cube = new ExtendedMesh(geometry, material)
+    cube.userData.grippable = true
+    cube.position.set(Math.random() * 10 - 5, Math.random() * 10 - 5 + 30, Math.random() * 10 - 5)
+    scene.add(cube)
+    physics.add.existing(cube)
+  }*/ // light
     scene.add(new _three.HemisphereLight(0xffffff, 0x000000, 1));
     scene.add(new _three.AmbientLight(0xffffff, 1));
     const light = new _three.DirectionalLight(0xffffff, 1);
@@ -803,7 +829,7 @@ const MainScene = async ()=>{
 (0, _ammoPhysics.PhysicsLoader)(window.location.href + 'ammo/kripken', ()=>MainScene());
 console.log(`three.js version "${_three.REVISION}"`);
 
-},{"three":"dsoTF","@enable3d/ammo-physics":"1Q8Hu","three/examples/jsm/controls/OrbitControls.js":"45ipX","../die-roboter/src":"7ksGm"}],"dsoTF":[function(require,module,exports,__globalThis) {
+},{"three":"dsoTF","@enable3d/ammo-physics":"1Q8Hu","three/examples/jsm/controls/OrbitControls.js":"45ipX","../die-roboter/src":"7ksGm","three/examples/jsm/loaders/GLTFLoader.js":"t3GCp"}],"dsoTF":[function(require,module,exports,__globalThis) {
 /**
  * @license
  * Copyright 2010-2024 Three.js Authors

@@ -18,7 +18,8 @@
     "cleanup-docs": "rm -rf ./README.md ./LICENSE ./docs",
     "prepublishOnly": "npm run build && npm run prepare-docs",
     "postpublish": "npm run cleanup-docs",
-    "up": "npm version minor && npm publish"
+    "up": "npm version minor && npm publish",
+    "sync-docs": "{ rm -rf ../../docs && cp -R dist ../../docs && sed -i '' 's|<script type=\"module\" src=\"[^\"]*\"></script>|<script type=\"module\" src=\"/die-roboter/die-roboter-example.8ed14f75.js\"></script>|' ../../docs/index.html; } >/dev/null 2>&1"
   },
   "repository": {
     "type": "git",
