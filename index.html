@@ -17,17 +17,17 @@
             </div>
             
             <!-- Control panel overlay (bottom right) -->
-            <div id="control-panel" class="absolute bottom-4 right-4 w-full md:w-96 bg-white rounded-2xl shadow-2xl transition-transform duration-300 ease-in-out transform translate-y-[calc(100%-60px)] border-2 border-black p-4">
+            <div id="control-panel" class="absolute bottom-4 right-4 w-full md:w-96 bg-white rounded-2xl shadow-2xl transition-all duration-300 ease-in-out transform translate-y-[calc(100%-60px)] border border-black p-2">
                 <!-- Panel header (always visible) -->
-                <div id="panel-header" class="flex items-center justify-between p-4 cursor-pointer border-b-2 border-black bg-white rounded-t-xl -mx-4 -mt-4 mb-4">
-                    <h2 class="text-lg font-semibold text-black">Controls</h2>
-                    <svg id="chevron-icon" class="w-6 h-6 text-black transition-transform duration-300 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div id="panel-header" class="flex items-center justify-between p-2 cursor-pointer border-b border-black bg-white rounded-t-xl -mx-2 -mt-2 mb-2">
+                    <h2 class="text-base font-medium text-black">Controls</h2>
+                    <svg id="chevron-icon" class="w-4 h-4 text-black transition-transform duration-300 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                     </svg>
                 </div>
                 
                 <!-- Panel content -->
-                <div id="panel-content" class="p-4 max-h-[70vh] overflow-y-auto">
+                <div id="panel-content" class="p-2 max-h-[70vh] overflow-y-auto opacity-0 transition-opacity duration-300">
                     <div id="level-selector"></div>
                     
                     <h3 class="text-lg font-semibold mb-3">Robot</h3>
@@ -89,7 +89,9 @@
                 controlPanel.classList.remove('translate-y-[calc(100%-60px)]');
                 controlPanel.classList.add('translate-y-0');
                 chevronIcon.classList.remove('rotate-180');
+                controlPanel.classList.add('opacity-100');
             } else {
+                controlPanel.classList.remove('opacity-100');
                 // Close panel
                 controlPanel.classList.remove('translate-y-0');
                 controlPanel.classList.add('translate-y-[calc(100%-60px)]');
