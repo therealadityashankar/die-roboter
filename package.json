@@ -1,35 +1,64 @@
 {
-  "name": "die-roboter-monorepo",
+  "name": "die-roboter",
   "version": "1.2.0",
-  "description": "TypeScript robot simulation library and examples",
-  "private": true,
-  "workspaces": [
-    "packages/*"
+  "description": "A TypeScript library for robot simulation and control with Three.js",
+  "main": "dist/index.js",
+  "module": "dist/module/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
   ],
   "scripts": {
-    "build": "npm run build --workspace=die-roboter",
-    "start": "npm run start --workspace=die-roboter-examples",
-    "dev": "npm run dev --workspace=die-roboter-examples",
-    "test": "npm run test --workspace=die-roboter",
-    "test:watch": "npm run test:watch --workspace=die-roboter",
-    "test:coverage": "npm run test:coverage --workspace=die-roboter",
-    "up": "npm run up --workspace=die-roboter"
+    "build": "tsc",
+    "dev": "parcel index.html",
+    "test": "jest",
+    "prepare-docs": "cp ../../README.md . && cp ../../LICENSE . && cp -r ../../docs .",
+    "cleanup-docs": "rm -rf ./README.md ./LICENSE ./docs",
+    "prepublishOnly": "npm run build && npm run prepare-docs",
+    "postpublish": "npm run cleanup-docs",
+    "up": "npm version minor && npm publish",
+    "sync-docs": "rm -rf ../../docs && cp -R dist ../../docs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/therealadityashankar/die-roboter.git"
   },
   "keywords": [
     "robots",
+    "simulation",
     "typescript",
-    "simulation"
+    "three.js",
+    "urdf",
+    "robotics",
+    "3d"
   ],
-  "author": "",
+  "author": "Aditya Shankar",
   "license": "Apache-2.0",
-  "engines": {
-    "node": ">=14"
+  "bugs": {
+    "url": "https://github.com/therealadityashankar/die-roboter/issues"
   },
+  "homepage": "https://github.com/therealadityashankar/die-roboter#readme",
   "dependencies": {
+    "@dimforge/rapier3d": "^0.18.0",
+    "@enable3d/ammo-physics": "^0.26.1",
     "enable3d": "^0.26.1",
-    "parcel": "^2.15.4",
-    "urdf-loader": "^0.12.6",
-    "urdf-parser": "^0.0.1",
-    "virtual-gamepad-lib": "^0.3.3"
+    "parcel": "^2.16.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "three": "^0.171.0",
+    "urdf-loader": "^0.12.6"
+  },
+  "peerDependencies": {
+    "three": "^0.171.0"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.0",
+    "@types/node": "^18.15.11",
+    "jest": "^29.5.0",
+    "parcel-reporter-static-files-copy": "^1.5.3",
+    "ts-jest": "^29.1.0",
+    "typescript": "^5.0.4"
   }
 }

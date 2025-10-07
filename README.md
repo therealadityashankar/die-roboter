@@ -88,6 +88,10 @@ PhysicsLoader('/ammo/kripken', () => MainScene())
 
 The library provides robot models that can be controlled through a simple pivot mapping system. Each pivot maps user-friendly ranges (like -100 to 100) to actual joint limits from the robot's URDF model.
 
+## Using the codebase
+
+you can start and edit the codebase by just running `npm run dev`
+
 ## Minimal Example
 
 You can see this [example on codepen here](https://codepen.io/riversnow/pen/YPyNdOP)
@@ -236,6 +240,8 @@ Tip: If you use a bundler, make sure the Ammo assets are copied to your build ou
 ## Acknowledgement
 
 The /URDF part of the code is taken from https://github.com/julien-blanchon/RobotHub-Frontend/tree/main/src/lib/components/3d/elements/robot/URDF
+
+The Switch Pro Controller SVG asset is from https://github.com/AL2009man/Gamepad-Asset-Pack/tree/main (MIT License)
 
 ## License
 

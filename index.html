@@ -4,51 +4,82 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@5/themes.css" rel="stylesheet" type="text/css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300..700&display=swap" rel="stylesheet">
     <title>Die Roboter - Robot Demo</title>
+
+    <style>
+        .quicksand {
+            font-family: "Quicksand", sans-serif;
+            font-optical-sizing: auto;
+            font-weight: 300;
+            font-style: normal;
+        }
+    </style>
 </head>
-<body class="m-0 p-5 bg-gray-100">
-    <div class="max-w-full mx-auto bg-white p-5 rounded-lg shadow-lg">
-        <h1 class="text-gray-800 text-center text-3xl font-bold mb-5">Die Roboter - Robot Demo</h1>
-        
+<body class="bg-gray-100 w-screen h-screen">
+    <div class="max-w-full mx-auto pt-5">
+        <!-- Heading -->
+        <div class="mb-5">
+            <h1 class="text-gray-800 text-center text-3xl quicksand mb-1">Die Roboter</h1>
+            <p class="text-gray-600 text-center text-sm quicksand">a video game for robots</p>
+        </div>
+                
         <!-- Full width robot view -->
-        <div class="relative w-full h-[calc(100vh-150px)]">
-            <div class="w-full h-full p-4 border border-gray-300 rounded-lg">
+        <div class="relative w-full h-[calc(100vh-100px)]">
+            <div class="w-full h-full rounded-sm">
                 <div id="robot-view" class="w-full h-full bg-gray-100 rounded-lg overflow-hidden"></div>
             </div>
             
             <!-- Control panel overlay (bottom right) -->
-            <div id="control-panel" class="absolute bottom-4 right-4 w-full md:w-96 bg-white rounded-2xl shadow-2xl transition-all duration-300 ease-in-out transform translate-y-[calc(100%-60px)] border border-black p-2">
-                <!-- Panel header (always visible) -->
-                <div id="panel-header" class="flex items-center justify-between p-2 cursor-pointer border-b border-black bg-white rounded-t-xl -mx-2 -mt-2 mb-2">
-                    <h2 class="text-base font-medium text-black">Controls</h2>
-                    <svg id="chevron-icon" class="w-4 h-4 text-black transition-transform duration-300 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                    </svg>
-                </div>
-                
+            <div id="control-panel" class="absolute bottom-0 right-0 w-96 h-full transition-transform duration-300 ease-in-out transform bg-gray-100 flex flex-col">
                 <!-- Panel content -->
-                <div id="panel-content" class="p-2 max-h-[70vh] overflow-y-auto opacity-0 transition-opacity duration-300">
+                <div id="panel-content" class="flex-1 p-4 overflow-y-auto bg-gray-100 border border-[var(--color-gray-300)] border-b-0">
                     <div id="level-selector"></div>
                     
-                    <h3 class="text-lg font-semibold mb-3">Robot</h3>
-                    <div class="flex gap-2 mb-4" aria-label="robot-switch">
-                        <button id="btn-lekiwi" class="px-4 py-2 bg-green-600 text-white border-0 rounded cursor-pointer transition-colors hover:bg-green-700">LeKiwi (default)</button>
-                        <button id="btn-so101" class="px-4 py-2 bg-green-600 text-white border-0 rounded cursor-pointer transition-colors hover:bg-green-700">SO101</button>
+                    <div class="flex justify-between items-center mb-3">
+                        <div class="flex justify-between items-center mb-3">
+                            <h3 class="text-lg font-semibold mr-4">Robot</h3>
+                            <div class="flex gap-2" aria-label="robot-switch">
+                              <button id="btn-lekiwi" class="px-3 py-1 text-xs bg-transparent text-gray-800 border border-gray-800 rounded cursor-pointer ml-2">LeKiwi (default)</button>
+                              <button id="btn-so101" class="px-3 py-1 text-xs bg-transparent text-gray-800 border border-gray-300 rounded cursor-pointer ml-2">SO101</button>
+                            </div>
+                          </div>                          
                     </div>
-                    
-                    <h3 class="text-lg font-semibold mb-3">Joint Controls</h3>
-                    <div id="joint-sliders-active" class="flex flex-col gap-2.5 p-2.5 bg-gray-50 rounded-lg max-h-96 overflow-y-auto" role="region" aria-label="joint-sliders">
+                    <div class="border-t border-gray-200 my-3"></div>
+
+                    <div class="flex items-center justify-between mt-4 mb-1">
+                        <h3 class="text-lg font-semibold">Motion</h3>
+                        <div id="joint-tab-container" class="flex gap-2 justify-end"></div>
+                    </div>
+                    <div id="joint-sliders-active" class="flex flex-col gap-2.5 p-2.5 bg-transparent rounded-lg max-h-96 overflow-y-auto" role="region" aria-label="joint-sliders">
                         <!-- Joint sliders will be added here dynamically -->
                     </div>
                     
                     <div class="text-xs text-gray-600 mt-4 leading-normal border-t border-gray-200 pt-4" aria-label="attribution">
-                        <strong>Attribution</strong><br />
                         Burger bun 3D model:
                         <a href="https://sketchfab.com/3d-models/burger-bun-bread-1eb53bef512a48e5b61e934748201d4e" target="_blank" rel="noopener noreferrer" class="text-green-600 no-underline hover:underline">Burger bun bread (Sketchfab)</a><br />
                         Burger patty 3D model:
                         <a href="https://sketchfab.com/3d-models/cooked-burger-patty-meatball-fdeae6bf467f4ec2a42147cf877365c3" target="_blank" rel="noopener noreferrer" class="text-green-600 no-underline hover:underline">Cooked burger patty / meatball (Sketchfab)</a>
+                        <br />Grass 3D model by MauroGonzalezA:
+                        <a href="https://sketchfab.com/3d-models/grass-4b800e07ea3543e3870ad5e53b39d825" target="_blank" rel="noopener noreferrer" class="text-green-600 no-underline hover:underline">Grass (Sketchfab)</a>
+                        <br />Mango tree 3D model by stealth86:
+                        <a href="https://sketchfab.com/3d-models/mango-tree-4b186052228d43d8b3fbb63213677de8" target="_blank" rel="noopener noreferrer" class="text-green-600 no-underline hover:underline">Mango tree (Sketchfab)</a>
+                        <br />Table 3D model by Silver10211:
+                        <a href="https://sketchfab.com/3d-models/table-a28843f21d784fe98cc220ef0d1df478" target="_blank" rel="noopener noreferrer" class="text-green-600 no-underline hover:underline">Table (Sketchfab)</a>
                     </div>
                 </div>
+                <!-- Panel toggle (always visible) -->
+                <button id="panel-toggle" class="btn btn-outline btn-sm rounded-none rounded-br-sm border-[var(--color-gray-300)] w-96 cursor-pointer flex items-center justify-between bg-transparent">
+                    <h2 class="">Controls</h2>
+                    <svg id="chevron-icon" class="w-4 h-4 text-black transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                    </svg>
+                </button>
             </div>
         </div>
     </div>
@@ -57,45 +88,45 @@
     <script type="module" src="./main.ts"></script>
     
     <script>
-        // Handle active button state for robot switch
+        // Handle active button state for robot switch (border emphasis, transparent background)
         const btnLekiwi = document.getElementById('btn-lekiwi');
         const btnSo101 = document.getElementById('btn-so101');
-        
+
+        function activate(btnActive, btnInactive) {
+            btnActive.classList.remove('border-gray-300');
+            btnActive.classList.add('border-gray-800');
+            btnInactive.classList.remove('border-gray-800');
+            btnInactive.classList.add('border-gray-300');
+        }
+
         btnLekiwi.addEventListener('click', function() {
-            this.classList.remove('bg-green-600', 'hover:bg-green-700');
-            this.classList.add('bg-green-800');
-            btnSo101.classList.remove('bg-green-800');
-            btnSo101.classList.add('bg-green-600', 'hover:bg-green-700');
+            activate(btnLekiwi, btnSo101);
         });
-        
+
         btnSo101.addEventListener('click', function() {
-            this.classList.remove('bg-green-600', 'hover:bg-green-700');
-            this.classList.add('bg-green-800');
-            btnLekiwi.classList.remove('bg-green-800');
-            btnLekiwi.classList.add('bg-green-600', 'hover:bg-green-700');
+            activate(btnSo101, btnLekiwi);
         });
         
         // Handle panel toggle
         const controlPanel = document.getElementById('control-panel');
-        const panelHeader = document.getElementById('panel-header');
+        const panelContent = document.getElementById('panel-content')
+        const panelToggle = document.getElementById('panel-toggle');
         const chevronIcon = document.getElementById('chevron-icon');
-        let isPanelOpen = false;
+        let isPanelOpen = true;
         
-        panelHeader.addEventListener('click', function() {
+        panelToggle.addEventListener('click', function() {
             isPanelOpen = !isPanelOpen;
             
             if (isPanelOpen) {
                 // Open panel
-                controlPanel.classList.remove('translate-y-[calc(100%-60px)]');
-                controlPanel.classList.add('translate-y-0');
+                controlPanel.classList.add('h-full');
+                panelContent.classList.remove('hidden')
                 chevronIcon.classList.remove('rotate-180');
-                controlPanel.classList.add('opacity-100');
             } else {
-                controlPanel.classList.remove('opacity-100');
                 // Close panel
-                controlPanel.classList.remove('translate-y-0');
-                controlPanel.classList.add('translate-y-[calc(100%-60px)]');
                 chevronIcon.classList.add('rotate-180');
+                controlPanel.classList.remove('h-full');
+                panelContent.classList.add('hidden')
             }
         });
     </script>
