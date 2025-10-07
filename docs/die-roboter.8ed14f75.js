@@ -66461,7 +66461,7 @@ class LeKiwi extends (0, _robot.Robot) {
             name: "LeKiwi",
             // temporary change, needs to be reverted to https://cdn.jsdelivr.net/gh/therealadityashankar/die-roboter/urdf/
             // before pushing
-            modelPath: "https://cdn.jsdelivr.net/gh/therealadityashankar/die-roboter/urdf//LeKiwi.urdf",
+            modelPath: window.location.href + "urdf/lekiwi/LeKiwi.urdf",
             unmappedPivotMap,
             basePhysicsRepresentation,
             linkPhysicsMap
