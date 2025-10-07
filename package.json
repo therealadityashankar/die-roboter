@@ -14,12 +14,10 @@
     "build": "tsc",
     "dev": "parcel index.html",
     "test": "jest",
-    "prepare-docs": "cp ../../README.md . && cp ../../LICENSE . && cp -r ../../docs .",
-    "cleanup-docs": "rm -rf ./README.md ./LICENSE ./docs",
     "prepublishOnly": "npm run build && npm run prepare-docs",
     "postpublish": "npm run cleanup-docs",
     "up": "npm version minor && npm publish",
-    "sync-docs": "rm -rf ./docs && cp -R dist ./docs"
+    "sync-docs": "cp -R dist ./docs"
   },
   "repository": {
     "type": "git",
