@@ -17,7 +17,7 @@
     "prepublishOnly": "npm run build && npm run prepare-docs",
     "postpublish": "npm run cleanup-docs",
     "up": "npm version minor && npm publish",
-    "sync-docs": "cp -R dist ./docs"
+    "sync-docs": "cp -R ./dist/ ./docs/"
   },
   "repository": {
     "type": "git",
