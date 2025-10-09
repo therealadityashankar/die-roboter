@@ -44,7 +44,7 @@ const MainScene = async () => {
   const mtlLoader = new MTLLoader();
   const objLoader = new OBJLoader();
 
-  const table = await createTable({
+  const tablePromise = createTable({
     mtlLoader,
     objLoader,
     physics,
@@ -59,7 +59,7 @@ const MainScene = async () => {
     },
   });
 
-  const bun = await loadAsset({
+  const bunPromise = loadAsset({
     loader,
     scene,
     path: 'burger-bun-bread/source/bun.glb',
@@ -69,7 +69,7 @@ const MainScene = async () => {
     onProgress: undefined,
   });
 
-  const patty = await loadAsset({
+  const pattyPromise = loadAsset({
     loader,
     scene,
     path: 'cooked-burger-patty-meatball/source/cooked.glb',
@@ -80,7 +80,7 @@ const MainScene = async () => {
     },
   });
 
-  const bunClone = await loadAsset({
+  const bunClonePromise = loadAsset({
     loader,
     scene,
     path: 'burger-bun-bread/source/bun.glb',
@@ -91,6 +91,69 @@ const MainScene = async () => {
       console.log(`${percent.toFixed(2)}% loaded (burger bun)`);
     },
   });
+
+  const mangoTreePromise = createTree({
+    loader: fbxLoader,
+    textureLoader,
+    type: 'mango',
+    position: new THREE.Vector3(8, 0, -5),
+    scale: 0.02,
+  });
+
+  const grassPromises = [
+    createGrassGrid({
+      loader,
+      scene,
+      path: 'grass/sketch.gltf',
+      gridX: 2,
+      gridZ: 2,
+      spacing: 4,
+      basePosition: new THREE.Vector3(4, 0.5, -12),
+      scale: 8,
+      color: 0x00aa00,
+      roughness: 0.8,
+      metalness: 0,
+      randomizeRotation: true,
+      showAxesHelper: false
+    }),
+    createGrassGrid({
+      loader,
+      scene,
+      path: 'grass/sketch.gltf',
+      gridX: 2,
+      gridZ: 3,
+      spacing: 4,
+      basePosition: new THREE.Vector3(5, 0.5, -3),
+      scale: 8,
+      color: 0x00aa00,
+      roughness: 0.8,
+      metalness: 0,
+      randomizeRotation: true,
+      showAxesHelper: false
+    }),
+    createGrassGrid({
+      loader,
+      scene,
+      path: 'grass/sketch.gltf',
+      gridX: 5,
+      gridZ: 3,
+      spacing: 4,
+      basePosition: new THREE.Vector3(-5, 0.5, -3),
+      scale: 8,
+      color: 0x00aa00,
+      roughness: 0.8,
+      metalness: 0,
+      randomizeRotation: true,
+      showAxesHelper: false
+    })
+  ] as const
+
+  const [table, bun, patty, bunClone] = await Promise.all([
+    tablePromise,
+    bunPromise,
+    pattyPromise,
+    bunClonePromise,
+  ])
 
   table.addObjectAbove(bun, {
     deltaY: 5,
@@ -107,64 +170,12 @@ const MainScene = async () => {
     physicsOptions: { shape: 'box' }
   });
 
-  await createGrassGrid({
-    loader,
-    scene,
-    path: 'grass/sketch.gltf',
-    gridX: 2,
-    gridZ: 2,
-    spacing: 4,
-    basePosition: new THREE.Vector3(4, 0.5, -12),
-    scale: 8,
-    color: 0x00aa00,
-    roughness: 0.8,
-    metalness: 0,
-    randomizeRotation: true,
-    showAxesHelper: false
-  });
-
-  await createGrassGrid({
-    loader,
-    scene,
-    path: 'grass/sketch.gltf',
-    gridX: 2,
-    gridZ: 3,
-    spacing: 4,
-    basePosition: new THREE.Vector3(5, 0.5, -3),
-    scale: 8,
-    color: 0x00aa00,
-    roughness: 0.8,
-    metalness: 0,
-    randomizeRotation: true,
-    showAxesHelper: false
-  });
-
-  await createGrassGrid({
-    loader,
-    scene,
-    path: 'grass/sketch.gltf',
-    gridX: 5,
-    gridZ: 3,
-    spacing: 4,
-    basePosition: new THREE.Vector3(-5, 0.5, -3),
-    scale: 8,
-    color: 0x00aa00,
-    roughness: 0.8,
-    metalness: 0,
-    randomizeRotation: true,
-    showAxesHelper: false
-  });
+  await Promise.all(grassPromises)
 
   console.log("loaded grass grid")
 
 
-  const mangoTree = await createTree({
-    loader: fbxLoader,
-    textureLoader,
-    type: 'mango',
-    position: new THREE.Vector3(8, 0, -5),
-    scale: 0.02,
-  });
+  const mangoTree = await mangoTreePromise
 
   if (mangoTree) {
     scene.add(mangoTree);
