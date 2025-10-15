@@ -221,6 +221,7 @@ export abstract class Robot extends THREE.Object3D {
             console.warn(`Joint '${pivot.jointName}' has no lower limit defined in URDF. Using default value of -3.14.`);
             pivot.mappedLower = -3.14;
           } else {
+            // joint lower limit, normalized to 0 to 2PI
             pivot.mappedLower = joint.limit.lower;
           }
           
@@ -228,6 +229,7 @@ export abstract class Robot extends THREE.Object3D {
             console.warn(`Joint '${pivot.jointName}' has no upper limit defined in URDF. Using default value of 3.14.`);
             pivot.mappedUpper = 3.14;
           } else {
+            // joint upper limit, normalized to 0 to 2PI
             pivot.mappedUpper = joint.limit.upper;
           }          
           // The lower/upper values are kept as is - these are what the user specified

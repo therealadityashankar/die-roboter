@@ -139,7 +139,7 @@ export class LeKiwi extends Robot {
       name: "LeKiwi",
       // temporary change, needs to be reverted to https://cdn.jsdelivr.net/gh/therealadityashankar/die-roboter/urdf/
       // before pushing
-      modelPath: window.location.href + "urdf/lekiwi/LeKiwi.urdf", 
+      modelPath: window.location.origin + "/urdf/lekiwi/LeKiwi.urdf", 
       unmappedPivotMap,
       basePhysicsRepresentation,
       linkPhysicsMap

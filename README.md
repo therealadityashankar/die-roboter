@@ -92,6 +92,10 @@ The library provides robot models that can be controlled through a simple pivot 
 
 you can start and edit the codebase by just running `npm run dev`
 
+### Debugging the loading screen
+
+When working on the loading overlay UI you can force it to stay visible by appending `?debugLoading` to the local dev URL (for example `http://localhost:1234/?debugLoading`). The scene will finish loading in the background but the overlay will remain so you can inspect and tweak it.
+
 ## Minimal Example
 
 You can see this [example on codepen here](https://codepen.io/riversnow/pen/YPyNdOP)
