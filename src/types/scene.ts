@@ -1,5 +1,7 @@
 import type { SO101 } from '../robots/SO101';
 import type { LeKiwi } from '../robots/LeKiwi';
+import type * as THREE from 'three';
+import type { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
 export type RobotKey = 'lekiwi' | 'so101';
 
@@ -21,4 +23,6 @@ export interface MainSceneHandle {
   dispose: () => void;
   getActiveRobot: () => SO101 | LeKiwi | null;
   getActiveRobotKey: () => RobotKey;
+  camera: THREE.Camera;
+  controls: OrbitControls;
 }

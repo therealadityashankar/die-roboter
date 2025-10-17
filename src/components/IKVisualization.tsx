@@ -131,7 +131,7 @@ export const IKVisualization: React.FC<IKVisualizationProps> = ({
   }, [positionY, circleSize, zRangeMin, zRangeMax, calculateIK, width, height]);
 
   return (
-    <div className="flex flex-col items-stretch gap-1">
+    <div className="flex flex-col items-center gap-1">
       <span className="text-[9px] font-medium text-gray-600 text-center">
         IK (Y-Z)
       </span>
@@ -139,7 +139,8 @@ export const IKVisualization: React.FC<IKVisualizationProps> = ({
         ref={canvasRef}
         width={width}
         height={height}
-        className="border border-gray-300 rounded bg-white"
+        className="rounded bg-white"
+        style={{ width: `${width}px`, height: `${height}px` }}
       />
       {ikAngles ? (
         <div className="flex flex-col gap-0.5 text-[8px] text-gray-600">

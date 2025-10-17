@@ -45,10 +45,11 @@ const WRIST_KEYPOINT = 'wrist';
 const MIDDLE_FINGER_MCP_KEYPOINT = 'middle_finger_mcp';
 const PINKY_TIP_KEYPOINT = 'pinky_finger_tip';
 const RING_FINGER_TIP_KEYPOINT = 'ring_finger_tip';
-
-const MIN_GRIPPER_DEGREES = -180;
-const MAX_GRIPPER_DEGREES = 180;
 const GRIPPER_STEP_DEGREES = 1;
+
+// Physical comfort range for gripper angle mapping
+export const MIN_GRIPPER_ANGLE_PHYSICAL = -121;
+export const MAX_GRIPPER_ANGLE_PHYSICAL = -60;
 
 const MIN_GRIPPER_MOUTH_DEGREES = 0;
 const MAX_GRIPPER_MOUTH_DEGREES = 120;
@@ -106,9 +107,9 @@ export class PlanarControl {
       MAX_CIRCLE_REM
     );
     this.gripperAngleDegrees = clampRange(
-      options.initialGripperAngle ?? 0,
-      MIN_GRIPPER_DEGREES,
-      MAX_GRIPPER_DEGREES
+      options.initialGripperAngle ?? MIN_GRIPPER_ANGLE_PHYSICAL,
+      MIN_GRIPPER_ANGLE_PHYSICAL,
+      MAX_GRIPPER_ANGLE_PHYSICAL
     );
     this.gripperMouthAngleDegrees = clampRange(
       options.initialGripperMouthAngle ?? 30,
@@ -154,8 +155,8 @@ export class PlanarControl {
   setGripperAngle(angleDegrees: number) {
     this.gripperAngleDegrees = clampRange(
       angleDegrees,
-      MIN_GRIPPER_DEGREES,
-      MAX_GRIPPER_DEGREES
+      MIN_GRIPPER_ANGLE_PHYSICAL,
+      MAX_GRIPPER_ANGLE_PHYSICAL
     );
     this.options.onGripperAngleChange?.(this.gripperAngleDegrees);
   }
@@ -454,9 +455,9 @@ export class PlanarControl {
           const angleRadians = Math.atan2(dy, dx);
           const angleDegrees = angleRadians * 180 / Math.PI;
           
-          // Map to gripper angle range (-90 to 90)
+          // Map to gripper angle physical range
           const normalizedAngle = ((angleDegrees + 180) % 360 - 180);
-          const gripperAngle = clampRange(normalizedAngle, MIN_GRIPPER_DEGREES, MAX_GRIPPER_DEGREES);
+          const gripperAngle = clampRange(normalizedAngle, MIN_GRIPPER_ANGLE_PHYSICAL, MAX_GRIPPER_ANGLE_PHYSICAL);
           this.setGripperAngle(gripperAngle);
         }
       }
@@ -546,17 +547,13 @@ export class PlanarControl {
       );
       const [wristFlexAngle, setWristFlexAngle] = useState(control.getWristFlexAngle());
       const [isDraggingCircleSize, setIsDraggingCircleSize] = useState(false);
-      // Initialize angle based on current circle size
-      const [circleSizeAngle, setCircleSizeAngle] = useState(() => {
-        const initialSize = control.getCircleSize();
-        return ((initialSize - MIN_CIRCLE_REM) / (MAX_CIRCLE_REM - MIN_CIRCLE_REM)) * 2 * Math.PI;
-      });
       const [handTracking, setHandTracking] = useState(false);
       const [cameraButtonText, setCameraButtonText] = useState('Enable Hand Tracking');
       const [cameraButtonDisabled, setCameraButtonDisabled] = useState(false);
       const [handKeypoints, setHandKeypoints] = useState<{ thumb?: any; index?: any; ring?: any; thumbTip?: any; wrist?: any; middleFingerMcp?: any; pinkyTip?: any; ringFingerTip?: any }>({});
       const [handTrackedPosition, setHandTrackedPosition] = useState<{ x: number; y: number; z: number } | null>(null);
       const [showSettings, setShowSettings] = useState(false);
+      const [showIKViz, setShowIKViz] = useState(false);
       
       // Dynamic scale factor: use buffer zone only when hand tracking is active
       const cameraToControlScale = handTracking ? CAMERA_TO_CONTROL_SCALE_WITH_TRACKING : CAMERA_TO_CONTROL_SCALE_WITHOUT_TRACKING;
@@ -567,6 +564,10 @@ export class PlanarControl {
       const [zRangeMax, setZRangeMax] = useState(() => {
         const saved = localStorage.getItem('planar-z-range-max');
         return saved ? parseFloat(saved) : MAX_CIRCLE_REM;
+      });
+      const [storePosition, setStorePosition] = useState(() => {
+        const saved = localStorage.getItem('planar-store-position');
+        return saved === 'true';
       });
 
       const videoRef = useRef<HTMLVideoElement>(null);
@@ -599,6 +600,24 @@ export class PlanarControl {
         setZRangeMax(MAX_CIRCLE_REM);
         localStorage.removeItem('planar-z-range-min');
         localStorage.removeItem('planar-z-range-max');
+      };
+
+      const handleStorePositionChange = (enabled: boolean) => {
+        setStorePosition(enabled);
+        localStorage.setItem('planar-store-position', String(enabled));
+        if (enabled) {
+          // Save current position
+          localStorage.setItem('planar-position', JSON.stringify(position));
+        }
+      };
+
+      const handleResetPosition = () => {
+        const defaultPos = { x: 0, y: 0 };
+        setPosition(defaultPos);
+        control.setNormalizedPosition(defaultPos);
+        if (storePosition) {
+          localStorage.setItem('planar-position', JSON.stringify(defaultPos));
+        }
       };
 
       // Update position from pointer
@@ -709,6 +728,29 @@ export class PlanarControl {
         }
       };
 
+      // Load stored position on mount
+      useEffect(() => {
+        if (storePosition) {
+          const saved = localStorage.getItem('planar-position');
+          if (saved) {
+            try {
+              const savedPos = JSON.parse(saved);
+              setPosition(savedPos);
+              control.setNormalizedPosition(savedPos);
+            } catch (e) {
+              console.error('Failed to load saved position', e);
+            }
+          }
+        }
+      }, []);
+
+      // Save position when it changes (if storing is enabled)
+      useEffect(() => {
+        if (storePosition) {
+          localStorage.setItem('planar-position', JSON.stringify(position));
+        }
+      }, [position, storePosition]);
+
       // Sync Z range to control object
       useEffect(() => {
         control.zRangeMin = zRangeMin;
@@ -809,7 +851,20 @@ export class PlanarControl {
           ctx.fill();
         }
 
-      }, [handTracking, handKeypoints]);
+        // Draw theta value on canvas when hand tracking is active
+        if (handTracking) {
+          const thetaRadians = gripperAngle * (Math.PI / 180);
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(10, 10, 150, 30);
+          ctx.strokeStyle = '#3b82f6';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(10, 10, 150, 30);
+          ctx.fillStyle = '#000000';
+          ctx.font = '14px monospace';
+          ctx.fillText(`θ = ${thetaRadians.toFixed(3)} rad`, 15, 30);
+        }
+
+      }, [handTracking, handKeypoints, gripperAngle]);
 
       // Calculate position percentages for display
       let xPercent, yPercent;
@@ -827,41 +882,30 @@ export class PlanarControl {
         yPercent = (topCutoff + ((position.y + 1) / 2) * activeRange) * 100;
       }
 
-      // Circular slider handle handlers
+      // Linear slider handlers for circle size
+      const sliderRef = useRef<HTMLDivElement>(null);
+
+      const updateCircleSizeFromSlider = (clientX: number) => {
+        if (!sliderRef.current) return;
+        
+        const rect = sliderRef.current.getBoundingClientRect();
+        const offsetX = clampRange((clientX - rect.left) / rect.width, 0, 1);
+        
+        const newSize = MIN_CIRCLE_REM + offsetX * (MAX_CIRCLE_REM - MIN_CIRCLE_REM);
+        setCircleSize(newSize);
+        control.setCircleSize(newSize);
+      };
+
       const handleCircleSizePointerDown = (e: React.PointerEvent) => {
         e.stopPropagation();
         setIsDraggingCircleSize(true);
         (e.target as HTMLElement).setPointerCapture(e.pointerId);
+        updateCircleSizeFromSlider(e.clientX);
       };
 
       const handleCircleSizePointerMove = (e: React.PointerEvent) => {
-        if (!isDraggingCircleSize || !padRef.current) return;
-
-        const padRect = padRef.current.getBoundingClientRect();
-        const centerX = padRect.left + padRect.width / 2;
-        const centerY = padRect.top + padRect.height / 2;
-        
-        // Calculate angle from center to pointer
-        const dx = e.clientX - centerX;
-        const dy = e.clientY - centerY;
-        let angle = Math.atan2(dy, dx);
-        
-        // Convert to 0-360 degrees range
-        let angleDegrees = (angle * 180 / Math.PI + 360) % 360;
-        
-        // Clamp to 0-360 (one full rotation only)
-        angleDegrees = clampRange(angleDegrees, 0, 360);
-        
-        // Convert back to radians for display
-        angle = angleDegrees * Math.PI / 180;
-        setCircleSizeAngle(angle);
-        
-        // Map angle (0-360°) to circle size
-        const normalizedAngle = angleDegrees / 360;
-        const newSize = MIN_CIRCLE_REM + normalizedAngle * (MAX_CIRCLE_REM - MIN_CIRCLE_REM);
-        
-        setCircleSize(newSize);
-        control.setCircleSize(newSize);
+        if (!isDraggingCircleSize) return;
+        updateCircleSizeFromSlider(e.clientX);
       };
 
       const handleCircleSizePointerEnd = (e: React.PointerEvent) => {
@@ -870,58 +914,26 @@ export class PlanarControl {
         (e.target as HTMLElement).releasePointerCapture(e.pointerId);
       };
 
-      // Calculate handle position on outer circle perimeter
-      const handleSize = 0.75; // rem
-      const outerCircleSize = MAX_CIRCLE_REM; // Fixed size for outer circle
-      const outerCircleRadiusRem = outerCircleSize / 2;
-      const handleX = Math.cos(circleSizeAngle) * outerCircleRadiusRem;
-      const handleY = Math.sin(circleSizeAngle) * outerCircleRadiusRem;
+      // Calculate handle position for linear slider
+      const sliderPercent = ((circleSize - MIN_CIRCLE_REM) / (MAX_CIRCLE_REM - MIN_CIRCLE_REM)) * 100;
 
       return (
         <div className="flex flex-col gap-3">
           <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-600">
-            Position Target
+            Inverse Kinematics based control
           </h3>
 
-          <div className="text-[11px] text-gray-600 space-y-1">
-            <div>
-              Target (X,Y,Z): {position.x.toFixed(2)}, {position.y.toFixed(2)}, {((circleSize - MIN_CIRCLE_REM) / (MAX_CIRCLE_REM - MIN_CIRCLE_REM) * 2 - 1).toFixed(2)}
-            </div>
-            <div>
-              Circle Size: {circleSize.toFixed(2)} rem
-            </div>
-            <div>
-              θ = cos⁻¹(X) → {thetaRadians.toFixed(3)} rad ({thetaDegrees.toFixed(1)}°)
-            </div>
-            {handTrackedPosition && (
-              <div>
-                HandTracked (X,Y,Z): {handTrackedPosition.x.toFixed(2)}, {handTrackedPosition.y.toFixed(2)}, {handTrackedPosition.z.toFixed(2)}
-              </div>
-            )}
-          </div>
-
-          <button
-            type="button"
-            className="self-start rounded bg-blue-600 px-3 py-1 text-xs font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
-            onClick={toggleHandTracking}
-            disabled={cameraButtonDisabled}
-          >
-            {cameraButtonText}
-          </button>
-
           <div className="flex flex-col items-stretch gap-4">
-            {/* Pad Area with Settings Button and IK Viz */}
+            {/* Pad Area with Settings Button */}
             <div className="flex gap-2 items-start">
               {/* Main Pad */}
-              <div className="relative">
+              <div className="relative w-full" style={{ aspectRatio: '1/1', maxWidth: '400px' }}>
               <div
                 ref={padRef}
-                className={`relative border border-gray-300 shadow-sm rounded overflow-hidden ${
+                className={`relative border border-gray-300 rounded overflow-hidden w-full h-full ${
                   handTracking ? '' : 'bg-white'
                 }`}
                 style={{
-                  width: '220px',
-                  height: '220px',
                   minWidth: '50px',
                   minHeight: '50px',
                   touchAction: 'none',
@@ -964,6 +976,19 @@ export class PlanarControl {
                 onPointerCancel={handlePointerEnd}
               />
 
+              {/* Y Position Label - right side of horizontal line */}
+              <div
+                className="absolute pointer-events-none text-xs font-mono bg-white px-1 rounded border border-gray-300"
+                style={{
+                  zIndex: 4,
+                  right: '8px',
+                  top: `${yPercent}%`,
+                  transform: 'translateY(-50%)',
+                }}
+              >
+                Y: {position.y.toFixed(2)}
+              </div>
+
               {/* Vertical Line */}
               <div
                 className="absolute top-0 h-full border-l-2 border-dashed border-blue-400 pointer-events-auto"
@@ -978,22 +1003,22 @@ export class PlanarControl {
                 onPointerCancel={handlePointerEnd}
               />
 
-              {/* Outer Circle (fixed size) */}
+              {/* X Position Label - bottom of vertical line */}
               <div
-                className="absolute rounded-full border-2 border-dashed border-gray-300 pointer-events-none"
+                className="absolute pointer-events-none text-xs font-mono bg-white px-1 rounded border border-gray-300"
                 style={{
-                  zIndex: 1,
+                  zIndex: 4,
                   left: `${xPercent}%`,
-                  top: `${yPercent}%`,
-                  width: `${outerCircleSize}rem`,
-                  height: `${outerCircleSize}rem`,
-                  transform: 'translate(-50%, -50%)',
+                  bottom: '8px',
+                  transform: 'translateX(-50%)',
                 }}
-              />
+              >
+                X: {position.x.toFixed(2)}
+              </div>
 
               {/* Target Circle (variable size) */}
               <div
-                className="absolute rounded-full border-2 border-blue-500 bg-white shadow cursor-pointer pointer-events-auto"
+                className="absolute rounded-full border-2 border-blue-500 bg-white cursor-pointer pointer-events-auto"
                 style={{
                   zIndex: 2,
                   left: `${xPercent}%`,
@@ -1008,29 +1033,61 @@ export class PlanarControl {
                 onPointerCancel={handlePointerEnd}
               />
 
-              {/* Circular Size Control Handle on Outer Circle */}
+              {/* Linear Slider for Circle Size - fixed size, positioned below the circle */}
               <div
-                className="absolute rounded-full bg-green-500 border-2 border-white shadow-lg cursor-grab active:cursor-grabbing pointer-events-auto"
+                className="absolute pointer-events-auto flex flex-col items-center gap-1"
                 style={{
-                  width: `${handleSize}rem`,
-                  height: `${handleSize}rem`,
+                  zIndex: 3,
                   left: `${xPercent}%`,
                   top: `${yPercent}%`,
-                  transform: `translate(calc(-50% + ${handleX}rem), calc(-50% + ${handleY}rem))`,
-                  zIndex: 10,
+                  transform: `translate(-50%, calc(${circleSize / 2}rem + 16px))`,
+                  width: '3.2rem', // Fixed width, slightly longer than max circle size
                 }}
-                onPointerDown={handleCircleSizePointerDown}
-                onPointerMove={handleCircleSizePointerMove}
-                onPointerUp={handleCircleSizePointerEnd}
-                onPointerCancel={handleCircleSizePointerEnd}
-              />
+              >
+                {/* Screen reader labels */}
+                <span className="sr-only">Reach (Z-axis): {circleSize.toFixed(2)} rem</span>
+                <div
+                  ref={sliderRef}
+                  className="relative w-full h-2 bg-blue-200 rounded-full cursor-pointer"
+                  style={{ touchAction: 'none' }}
+                  role="slider"
+                  aria-label="Reach Z-axis"
+                  aria-valuemin={MIN_CIRCLE_REM}
+                  aria-valuemax={MAX_CIRCLE_REM}
+                  aria-valuenow={circleSize}
+                  aria-valuetext={`${circleSize.toFixed(2)} rem`}
+                  onPointerDown={handleCircleSizePointerDown}
+                  onPointerMove={handleCircleSizePointerMove}
+                  onPointerUp={handleCircleSizePointerEnd}
+                  onPointerCancel={handleCircleSizePointerEnd}
+                >
+                  {/* Track fill */}
+                  <div
+                    className="absolute top-0 left-0 h-full bg-blue-500 rounded-full pointer-events-none"
+                    style={{ width: `${sliderPercent}%` }}
+                  />
+                  {/* Handle */}
+                  <div
+                    className="absolute top-1/2 w-3 h-3 bg-white border-2 border-blue-500 rounded-full cursor-grab active:cursor-grabbing pointer-events-none"
+                    style={{
+                      left: `${sliderPercent}%`,
+                      transform: 'translate(-50%, -50%)',
+                    }}
+                  />
+                </div>
+                {/* Z Position Label - below the slider */}
+                <div className="text-xs font-mono bg-white px-1 rounded border border-gray-300">
+                  Z: {((circleSize - MIN_CIRCLE_REM) / (MAX_CIRCLE_REM - MIN_CIRCLE_REM) * 2 - 1).toFixed(2)}
+                </div>
+              </div>
+
             </div>
 
               {/* Settings Button */}
               <button
                 type="button"
                 onClick={() => setShowSettings(!showSettings)}
-                className="absolute top-2 right-2 w-8 h-8 flex items-center justify-center rounded bg-gray-200 hover:bg-gray-300 transition-colors shadow cursor-pointer"
+                className="absolute top-2 right-2 w-8 h-8 flex items-center justify-center rounded bg-gray-200 hover:bg-gray-300 transition-colors cursor-pointer"
                 style={{ zIndex: 20 }}
                 title="Z-Range Settings"
               >
@@ -1039,9 +1096,9 @@ export class PlanarControl {
 
               {/* Settings Modal */}
               {showSettings && (
-                <div className="absolute top-0 right-0 mt-12 w-50 bg-white border border-gray-300 rounded shadow-lg p-4 z-30">
+                <div className="absolute top-0 right-0 mt-12 w-60 bg-white border border-gray-300 rounded p-4 z-30">
                   <div className="flex items-center justify-between mb-3">
-                    <h4 className="text-sm font-semibold">Z-Axis Range</h4>
+                    <h4 className="text-sm font-semibold">Settings</h4>
                     <button
                       onClick={() => setShowSettings(false)}
                       className="text-gray-500 hover:text-gray-700 cursor-pointer"
@@ -1051,161 +1108,204 @@ export class PlanarControl {
                   </div>
                   
                   <div className="space-y-3 text-xs">
-                    <div>
-                      <label className="block text-gray-700 mb-1">
-                        Min Z: {zRangeMin.toFixed(2)}
-                      </label>
-                      <input
-                        type="range"
-                        min={MIN_CIRCLE_REM}
-                        max={MAX_CIRCLE_REM}
-                        step="0.1"
-                        value={zRangeMin}
-                        onChange={(e) => handleZRangeMinChange(Number(e.target.value))}
-                        className="w-full"
-                      />
+                    <div className="pb-3 border-b border-gray-200">
+                      <h5 className="font-medium text-gray-700 mb-2">Z-Axis Range</h5>
+                      <div className="space-y-2">
+                        <div>
+                          <label className="block text-gray-700 mb-1">
+                            Min Z: {zRangeMin.toFixed(2)}
+                          </label>
+                          <input
+                            type="range"
+                            min={MIN_CIRCLE_REM}
+                            max={MAX_CIRCLE_REM}
+                            step="0.1"
+                            value={zRangeMin}
+                            onChange={(e) => handleZRangeMinChange(Number(e.target.value))}
+                            className="w-full"
+                          />
+                        </div>
+                        
+                        <div>
+                          <label className="block text-gray-700 mb-1">
+                            Max Z: {zRangeMax.toFixed(2)}
+                          </label>
+                          <input
+                            type="range"
+                            min={MIN_CIRCLE_REM}
+                            max={MAX_CIRCLE_REM}
+                            step="0.1"
+                            value={zRangeMax}
+                            onChange={(e) => handleZRangeMaxChange(Number(e.target.value))}
+                            className="w-full"
+                          />
+                        </div>
+                        
+                        <button
+                          onClick={handleResetZRange}
+                          className="w-full mt-1 px-3 py-1.5 text-xs bg-gray-200 hover:bg-gray-300 rounded transition-colors"
+                        >
+                          Reset Z Range
+                        </button>
+                      </div>
                     </div>
-                    
+
                     <div>
-                      <label className="block text-gray-700 mb-1">
-                        Max Z: {zRangeMax.toFixed(2)}
-                      </label>
-                      <input
-                        type="range"
-                        min={MIN_CIRCLE_REM}
-                        max={MAX_CIRCLE_REM}
-                        step="0.1"
-                        value={zRangeMax}
-                        onChange={(e) => handleZRangeMaxChange(Number(e.target.value))}
-                        className="w-full"
-                      />
-                    </div>
-                    
-                    <button
-                      onClick={handleResetZRange}
-                      className="w-full mt-2 px-3 py-1.5 text-xs bg-gray-200 hover:bg-gray-300 rounded transition-colors"
-                    >
-                      Reset to Default
-                    </button>
-                    
-                    <div className="text-[10px] text-gray-500 mt-2 pt-2 border-t">
-                      Configure the Z-axis range that maps to robot arm movement.
+                      <h5 className="font-medium text-gray-700 mb-2">Position Storage</h5>
+                      <div className="space-y-2">
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={storePosition}
+                            onChange={(e) => handleStorePositionChange(e.target.checked)}
+                            className="rounded"
+                          />
+                          <span className="text-gray-700">Remember position</span>
+                        </label>
+                        
+                        <button
+                          onClick={handleResetPosition}
+                          className="w-full px-3 py-1.5 text-xs bg-gray-200 hover:bg-gray-300 rounded transition-colors"
+                        >
+                          Reset Position
+                        </button>
+                        
+                        <div className="text-[10px] text-gray-500 mt-2 pt-2 border-t">
+                          When enabled, your crosshair position will be saved and restored on page reload.
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
               )}
               </div>
-
-              {/* IK Visualization */}
-              <IKVisualization
-                positionY={-position.y}
-                circleSize={circleSize}
-                zRangeMin={zRangeMin}
-                zRangeMax={zRangeMax}
-                calculateIK={inverseKinematics2Link}
-              />
             </div>
+            
+            {/* Hand Tracking Button */}
+            <button
+              type="button"
+              className="self-start rounded bg-blue-600 px-3 py-1 text-xs font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
+              onClick={toggleHandTracking}
+              disabled={cameraButtonDisabled}
+            >
+              {cameraButtonText}
+            </button>
 
             {/* Sliders */}
-            <style>{`
-              .custom-range {
-                -webkit-appearance: none;
-                appearance: none;
-                width: 100%;
-                height: 6px;
-                border-radius: 2px;
-                outline: none;
-              }
-              .custom-range::-webkit-slider-thumb {
-                -webkit-appearance: none;
-                appearance: none;
-                width: 14px;
-                height: 14px;
-                border-radius: 2px;
-                background: #3b82f6;
-                cursor: pointer;
-                border: 1px solid #ffffff;
-                box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-              }
-              .custom-range::-moz-range-thumb {
-                width: 14px;
-                height: 14px;
-                border-radius: 2px;
-                background: #3b82f6;
-                cursor: pointer;
-                border: 1px solid #ffffff;
-                box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-              }
-            `}</style>
-            <div className="flex flex-col items-stretch gap-2 w-full max-w-[160px]">
-              {/* Gripper Angle Slider */}
-              <div className="flex flex-col items-stretch gap-1">
-                <span className="text-[10px] font-medium text-gray-600 text-left">
-                  Gripper Angle: {gripperAngle}°
-                </span>
-                <input
-                  type="range"
-                  min={MIN_GRIPPER_DEGREES}
-                  max={MAX_GRIPPER_DEGREES}
-                  step={GRIPPER_STEP_DEGREES}
-                  value={gripperAngle}
-                  onChange={(e) => {
-                    const value = Number(e.target.value);
-                    setGripperAngle(value);
-                    control.setGripperAngle(value);
-                  }}
-                  className="custom-range"
-                  style={{
-                    background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${((gripperAngle - MIN_GRIPPER_DEGREES) / (MAX_GRIPPER_DEGREES - MIN_GRIPPER_DEGREES)) * 100}%, #e5e7eb ${((gripperAngle - MIN_GRIPPER_DEGREES) / (MAX_GRIPPER_DEGREES - MIN_GRIPPER_DEGREES)) * 100}%, #e5e7eb 100%)`
-                  }}
-                />
-              </div>
+            <div className="flex flex-col">
+              <style>{`
+                .custom-range {
+                  -webkit-appearance: none;
+                  appearance: none;
+                  width: 100%;
+                  height: 8px;
+                  border-radius: 9999px;
+                  border: none;
+                  outline: none;
+                  background: #bfdbfe;
+                }
+                .custom-range::-webkit-slider-thumb {
+                  -webkit-appearance: none;
+                  appearance: none;
+                  width: 12px;
+                  height: 12px;
+                  border-radius: 9999px;
+                  background: #3b82f6;
+                  cursor: pointer;
+                  border: none;
+                }
+                .custom-range::-moz-range-thumb {
+                  width: 12px;
+                  height: 12px;
+                  border-radius: 9999px;
+                  background: #3b82f6;
+                  cursor: pointer;
+                  border: none; 
+                }
+              `}</style>
+              <div className="flex flex-col items-stretch gap-2 w-full">
+                {/* Gripper Angle Slider */}
+                <div className="flex flex-col items-stretch gap-1">
+                  <span className="text-[10px] font-medium text-gray-600 text-left">
+                    Gripper Angle: {(((gripperAngle - MIN_GRIPPER_ANGLE_PHYSICAL) / (MAX_GRIPPER_ANGLE_PHYSICAL - MIN_GRIPPER_ANGLE_PHYSICAL)) * 100).toFixed(2)}
+                  </span>
+                  <input
+                    type="range"
+                    min={MIN_GRIPPER_ANGLE_PHYSICAL}
+                    max={MAX_GRIPPER_ANGLE_PHYSICAL}
+                    step={GRIPPER_STEP_DEGREES}
+                    value={gripperAngle}
+                    onChange={(e) => {
+                      const value = Number(e.target.value);
+                      setGripperAngle(value);
+                      control.setGripperAngle(value);
+                    }}
+                    className="custom-range"
+                  />
+                </div>
 
-              {/* Gripper Mouth Angle Slider */}
-              <div className="flex flex-col items-stretch gap-1">
-                <span className="text-[10px] font-medium text-gray-600 text-left">
-                  Gripper Mouth: {gripperMouthAngle}°
-                </span>
-                <input
-                  type="range"
-                  min={MIN_GRIPPER_MOUTH_DEGREES}
-                  max={MAX_GRIPPER_MOUTH_DEGREES}
-                  step={GRIPPER_MOUTH_STEP_DEGREES}
-                  value={gripperMouthAngle}
-                  onChange={(e) => {
-                    const value = Number(e.target.value);
-                    setGripperMouthAngle(value);
-                    control.setGripperMouthAngle(value);
-                  }}
-                  className="custom-range"
-                  style={{
-                    background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${((gripperMouthAngle - MIN_GRIPPER_MOUTH_DEGREES) / (MAX_GRIPPER_MOUTH_DEGREES - MIN_GRIPPER_MOUTH_DEGREES)) * 100}%, #e5e7eb ${((gripperMouthAngle - MIN_GRIPPER_MOUTH_DEGREES) / (MAX_GRIPPER_MOUTH_DEGREES - MIN_GRIPPER_MOUTH_DEGREES)) * 100}%, #e5e7eb 100%)`
-                  }}
-                />
-              </div>
+                {/* Gripper Mouth Angle Slider */}
+                <div className="flex flex-col items-stretch gap-1">
+                  <span className="text-[10px] font-medium text-gray-600 text-left">
+                    Gripper Mouth: {gripperMouthAngle.toFixed(2)}°
+                  </span>
+                  <input
+                    type="range"
+                    min={MIN_GRIPPER_MOUTH_DEGREES}
+                    max={MAX_GRIPPER_MOUTH_DEGREES}
+                    step={GRIPPER_MOUTH_STEP_DEGREES}
+                    value={gripperMouthAngle}
+                    onChange={(e) => {
+                      const value = Number(e.target.value);
+                      setGripperMouthAngle(value);
+                      control.setGripperMouthAngle(value);
+                    }}
+                    className="custom-range"
+                  />
+                </div>
 
-              {/* Wrist Flex Slider */}
-              <div className="flex flex-col items-stretch gap-1">
-                <span className="text-[10px] font-medium text-gray-600 text-left">
-                  Wrist Flex: {wristFlexAngle}°
-                </span>
-                <input
-                  type="range"
-                  min={MIN_WRIST_FLEX_DEGREES}
-                  max={MAX_WRIST_FLEX_DEGREES}
-                  step={WRIST_FLEX_STEP_DEGREES}
-                  value={wristFlexAngle}
-                  onChange={(e) => {
-                    const value = Number(e.target.value);
-                    setWristFlexAngle(value);
-                    control.setWristFlexAngle(value);
-                  }}
-                  className="custom-range"
-                  style={{
-                    background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${((wristFlexAngle - MIN_WRIST_FLEX_DEGREES) / (MAX_WRIST_FLEX_DEGREES - MIN_WRIST_FLEX_DEGREES)) * 100}%, #e5e7eb ${((wristFlexAngle - MIN_WRIST_FLEX_DEGREES) / (MAX_WRIST_FLEX_DEGREES - MIN_WRIST_FLEX_DEGREES)) * 100}%, #e5e7eb 100%)`
-                  }}
-                />
+                {/* Wrist Flex Slider */}
+                <div className="flex flex-col items-stretch gap-1">
+                  <span className="text-[10px] font-medium text-gray-600 text-left">
+                    Wrist Flex: {wristFlexAngle.toFixed(2)}°
+                  </span>
+                  <input
+                    type="range"
+                    min={MIN_WRIST_FLEX_DEGREES}
+                    max={MAX_WRIST_FLEX_DEGREES}
+                    step={WRIST_FLEX_STEP_DEGREES}
+                    value={wristFlexAngle}
+                    onChange={(e) => {
+                      const value = Number(e.target.value);
+                      setWristFlexAngle(value);
+                      control.setWristFlexAngle(value);
+                    }}
+                    className="custom-range"
+                  />
+                </div>
               </div>
+            </div>
+
+            {/* IK Visualization (Minimizable) */}
+            <div className="flex flex-col gap-2 items-start">
+              <button
+                onClick={() => setShowIKViz(!showIKViz)}
+                className="flex items-center justify-between px-2 py-1 text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded cursor-pointer w-full"
+              >
+                <span>IK Visualization (Y-Z)</span>
+                <span className="text-lg leading-none">{showIKViz ? '−' : '+'}</span>
+              </button>
+              {showIKViz && (
+                <IKVisualization
+                  positionY={-position.y}
+                  circleSize={circleSize}
+                  zRangeMin={zRangeMin}
+                  zRangeMax={zRangeMax}
+                  calculateIK={inverseKinematics2Link}
+                  width={80}
+                  height={80}
+                />
+              )}
             </div>
           </div>
         </div>

@@ -1,0 +1,23 @@
+1. In the newer version of @headlessui/react, we should use TabGroup, TabPanels, TabList, TabPanel directly instead of Tab.Group, Tab.Panels, Tab.List, Tab.Panel, please ensure that this is followed
+2. When I am referring to turning a functional react component into a class, i typically mean that there is a base class – which itself isn't a react component, but it has a class function that returns a functional react component. 
+    so for example something like
+
+    ```ts
+    class RobotConnection {
+        constructor() {
+            ...
+        }
+        
+        render(): React.FC {
+            return (
+                <div>
+                    <p>Robot Connection</p>
+                </div>
+            );
+        }
+    }
+    ```
+    
+    Imo this has an advantage of removing callback functions and making code a little bit cleaner
+
+3. Avoid try catch blocks

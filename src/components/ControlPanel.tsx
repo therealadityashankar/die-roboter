@@ -1,6 +1,9 @@
 import React, { useMemo, useRef } from 'react';
-import { PlanarControl } from '../planar';
-import { MovementControl, RotationControl } from './index';
+import { Tab, TabGroup, TabList, TabPanels, TabPanel } from '@headlessui/react';
+import { Settings } from 'lucide-react';
+import { PlanarControl, MIN_GRIPPER_ANGLE_PHYSICAL, MAX_GRIPPER_ANGLE_PHYSICAL } from '../planar';
+import { MovementControl, RotationControl, RemoteControl } from './index';
+import { RobotConnection } from './RobotConnection';
 import { Robot } from '../robots/Robot';
 import type { RobotKey, MainSceneHandle } from '../types/scene';
 import { inverseKinematics2Link } from '../utils/inverseKinematics';
@@ -21,14 +24,51 @@ const getRobotButtonClasses = (activeRobot: RobotKey, key: RobotKey) =>
 
 interface PlanarControlSectionProps {
   sceneHandle: MainSceneHandle | null;
+  robotConnection?: RobotConnection;
 }
 
-const PlanarControlSection: React.FC<PlanarControlSectionProps> = ({ sceneHandle }) => {
+const PlanarControlSection: React.FC<PlanarControlSectionProps> = ({ sceneHandle, robotConnection }) => {
   const planarControlRef = useRef<PlanarControl | null>(null);
+  
+  // Helper function to sync virtual robot state to physical robot
+  const syncToPhysicalRobot = async () => {
+    const teleoperator = robotConnection?.getRobotTeleoperator();
+    if (!teleoperator) return;
+    
+    const robot = sceneHandle?.getActiveRobot();
+    if (!robot) return;
+    
+    const motorPositions: { [key: string]: number } = {};
+    
+    // Map each joint to its corresponding motor
+    const jointNames = ['shoulder_pan']//, 'shoulder_lift', 'elbow_flex', 'wrist_flex', 'wrist_roll', 'gripper'];
+
+    const shoulderPanMotorConfig = teleoperator.motorConfigs.find((config : any) => config.name === 'shoulder_pan');
+    const minPosition = shoulderPanMotorConfig?.minPosition;
+    const maxPosition = shoulderPanMotorConfig?.maxPosition;
+    
+    jointNames.forEach(jointName => {
+      if (robot.pivotMap[jointName]) {
+        const pivot = robot.pivotMap[jointName];
+        const value = pivot.value || 0;
+
+        // value normalized between 0 and 1
+        const normalizedValue = (value - pivot.lower) / (pivot.upper - pivot.lower);
+        
+        motorPositions[jointName] = minPosition + normalizedValue * (maxPosition - minPosition);
+        console.log("syncing ", jointName, value, pivot.lower, pivot.upper)
+      }
+    });
+    
+    await teleoperator.setMotorPositions(motorPositions);
+    console.log('Sent to physical robot:', motorPositions);
+  }
   
   const planarControl = useMemo(() => {
     const control = new PlanarControl({
       onChange: (position, theta, circleSize) => {
+
+        console.log("planar change  ", position, theta, circleSize)
         const robot = sceneHandle?.getActiveRobot();
         if (!robot) return;
         
@@ -105,6 +145,8 @@ const PlanarControlSection: React.FC<PlanarControlSectionProps> = ({ sceneHandle
             robot.setPivotValue('elbow_flex', elbowFlexValue);
           }
         }
+        
+        syncToPhysicalRobot();
       },
       onGripperAngleChange: (angle) => {
         const robot = sceneHandle?.getActiveRobot();
@@ -112,30 +154,22 @@ const PlanarControlSection: React.FC<PlanarControlSectionProps> = ({ sceneHandle
         
         const wristRollPivot = robot.pivotMap['wrist_roll'];
         if (wristRollPivot) {
-
-          // the actually physically comfortable range for angle is between
-          // -26 and -50, so we need to map angles between this range to the slider
-
-          const minAngle = -121;
-          const maxAngle = -60;
           let usedAngle = angle;
 
-          if(angle < minAngle){
-            usedAngle = minAngle;
+          if(angle < MIN_GRIPPER_ANGLE_PHYSICAL){
+            usedAngle = MIN_GRIPPER_ANGLE_PHYSICAL;
           }
 
-          if(angle > maxAngle){
-            usedAngle = maxAngle;
+          if(angle > MAX_GRIPPER_ANGLE_PHYSICAL){
+            usedAngle = MAX_GRIPPER_ANGLE_PHYSICAL;
           }
 
-          let normalizedAngle = (usedAngle - minAngle)/(maxAngle-minAngle);
+          let normalizedAngle = (usedAngle - MIN_GRIPPER_ANGLE_PHYSICAL)/(MAX_GRIPPER_ANGLE_PHYSICAL-MIN_GRIPPER_ANGLE_PHYSICAL);
           let pivotValue = wristRollPivot.lower + normalizedAngle * (wristRollPivot.upper - wristRollPivot.lower);
           robot.setPivotValue('wrist_roll', pivotValue);
-
-
-          //console.log("wrist roll", angle)
-          //robot.setPivotValue('wrist_roll', angle);
         }
+        
+        syncToPhysicalRobot();
       },
       onGripperMouthAngleChange: (angle) => {
         const robot = sceneHandle?.getActiveRobot();
@@ -148,6 +182,8 @@ const PlanarControlSection: React.FC<PlanarControlSectionProps> = ({ sceneHandle
           const gripperValue = gripperPivot.upper - (gripperPivot.lower + normalized * (gripperPivot.upper - gripperPivot.lower));
           robot.setPivotValue('gripper', gripperValue);
         }
+        
+        syncToPhysicalRobot();
       },
       onWristRollChange: (angleDegrees) => {
         const robot = sceneHandle?.getActiveRobot();
@@ -162,6 +198,8 @@ const PlanarControlSection: React.FC<PlanarControlSectionProps> = ({ sceneHandle
           const wristFlexValue = wristFlexPivot.lower + clampedNormalized * (wristFlexPivot.upper - wristFlexPivot.lower);
           robot.setPivotValue('wrist_flex', -90);
         }
+        
+        syncToPhysicalRobot();
       },
       onWristFlexChange: (angleDegrees) => {
         const robot = sceneHandle?.getActiveRobot();
@@ -176,12 +214,14 @@ const PlanarControlSection: React.FC<PlanarControlSectionProps> = ({ sceneHandle
           const wristFlexValue = wristFlexPivot.lower + clampedNormalized * (wristFlexPivot.upper - wristFlexPivot.lower);
           robot.setPivotValue('wrist_flex', wristFlexValue);
         }
+        
+        syncToPhysicalRobot();
       },
     });
     
     planarControlRef.current = control;
     return control;
-  }, [sceneHandle]);
+  }, [sceneHandle, syncToPhysicalRobot]);
 
   const PlanarControls = useMemo(() => planarControl.renderControls(), [planarControl]);
 
@@ -195,16 +235,70 @@ export const ControlPanel : React.FC<ControlPanelProps> = ({
   onTogglePanel,
   sceneHandle,
 }) => {
+  // Default rotation offset applied during WASD movement (in radians)
+  const DEFAULT_MOVEMENT_ROTATION = -1.5; // Modify this value as needed
+
+  // Camera position storage state
+  const [storeCameraPosition, setStoreCameraPosition] = React.useState(() => {
+    return localStorage.getItem('store-camera-position') === 'true';
+  });
+  const [showCameraSettings, setShowCameraSettings] = React.useState(false);
+
+  // Physical robot connection instance
+  const robotConnection = useMemo(() => new RobotConnection(), []);
+
+  const handleStoreCameraChange = (enabled: boolean) => {
+    setStoreCameraPosition(enabled);
+    localStorage.setItem('store-camera-position', String(enabled));
+    if (enabled && sceneHandle) {
+      // Save current camera position
+      const p = sceneHandle.camera.position;
+      const t = sceneHandle.controls.target;
+      localStorage.setItem('camera-position', JSON.stringify({ x: p.x, y: p.y, z: p.z }));
+      localStorage.setItem('camera-target', JSON.stringify({ x: t.x, y: t.y, z: t.z }));
+    }
+  };
+
+  const handleResetCamera = () => {
+    if (!sceneHandle) return;
+    
+    // Default camera position (from main.ts)
+    const DEFAULT_CAMERA_POSITION = { x: -32.539, y: 23.815, z: 4.334 };
+    const DEFAULT_CONTROLS_TARGET = { x: 1.952, y: -3.623, z: -1.269 };
+    
+    sceneHandle.camera.position.set(DEFAULT_CAMERA_POSITION.x, DEFAULT_CAMERA_POSITION.y, DEFAULT_CAMERA_POSITION.z);
+    sceneHandle.controls.target.set(DEFAULT_CONTROLS_TARGET.x, DEFAULT_CONTROLS_TARGET.y, DEFAULT_CONTROLS_TARGET.z);
+    sceneHandle.camera.lookAt(DEFAULT_CONTROLS_TARGET.x, DEFAULT_CONTROLS_TARGET.y, DEFAULT_CONTROLS_TARGET.z);
+    sceneHandle.controls.update();
+    
+    if (storeCameraPosition) {
+      localStorage.setItem('camera-position', JSON.stringify(DEFAULT_CAMERA_POSITION));
+      localStorage.setItem('camera-target', JSON.stringify(DEFAULT_CONTROLS_TARGET));
+    }
+  };
+
   const handleMove = (dx: number, dz: number) => {
     const robot = sceneHandle?.getActiveRobot();
     if (!robot || !robot.robot) return;
 
+    // Get current rotation angle (yaw around Z-axis) plus default offset
+    const rotationAngle = (robot.robot.rotation.z + DEFAULT_MOVEMENT_ROTATION) % (2 * Math.PI);
+        
+    // Rotate the movement vector by the robot's current rotation
+    // Using 2D rotation matrix:
+    // x' = x * cos(θ) - z * sin(θ)
+    // z' = x * sin(θ) + z * cos(θ)
+    const cos = Math.cos(rotationAngle);
+    const sin = Math.sin(rotationAngle);
+    const rotatedDz = dx * cos - dz * sin;
+    const rotatedDx = dx * sin + dz * cos;
+
     const anyRobot = robot as any;
     if (typeof anyRobot.moveByXZ === 'function') {
-      anyRobot.moveByXZ(dx, dz);
+      anyRobot.moveByXZ(rotatedDx, rotatedDz);
     } else {
-      robot.robot.position.x += dx;
-      robot.robot.position.z += dz;
+      robot.robot.position.x += rotatedDx;
+      robot.robot.position.z += rotatedDz;
       Robot.markLinksAsNeedingPhysicsUpdate(robot.robot);
       robot.updateGrippedObjectPositions();
     }
@@ -219,6 +313,8 @@ export const ControlPanel : React.FC<ControlPanelProps> = ({
       anyRobot.rotateByYaw(delta);
     } else {
       robot.robot.rotation.z += delta;
+      // Clamp rotation to 0 to 2π
+      robot.robot.rotation.z = ((robot.robot.rotation.z % (2 * Math.PI)) + (2 * Math.PI)) % (2 * Math.PI);
       Robot.markLinksAsNeedingPhysicsUpdate(robot.robot);
       robot.updateGrippedObjectPositions();
     }
@@ -235,40 +331,133 @@ export const ControlPanel : React.FC<ControlPanelProps> = ({
           isPanelOpen ? '' : 'hidden'
         }`}
       >
-        <div className="flex justify-between items-center mb-3">
-          <div className="flex justify-between items-center mb-3">
-            <h3 className="text-lg font-semibold mr-4">Robot</h3>
-            <div className="flex gap-2" aria-label="robot-switch">
-              <button
-                className={getRobotButtonClasses(activeRobot, 'lekiwi')}
-                onClick={() => onRobotChange('lekiwi')}
-                type="button"
+        <TabGroup>
+          <div className="flex items-center justify-between mb-4 relative">
+            <h3 className="text-lg font-semibold">Robot Control</h3>
+            <div className="flex items-center gap-2">
+              <TabList className="flex space-x-1 rounded-lg bg-gray-200 p-1">
+              <Tab
+                className={({ selected }) =>
+                  `rounded-md px-3 py-1 text-sm font-medium leading-5 quicksand cursor-pointer
+                  ${
+                    selected
+                      ? 'bg-white text-gray-900 shadow'
+                      : 'text-gray-700 hover:bg-white/[0.12] hover:text-gray-900'
+                  }
+                  focus:outline-none`
+                }
               >
-                LeKiwi (default)
-              </button>
-              <button
-                className={getRobotButtonClasses(activeRobot, 'so101')}
-                onClick={() => onRobotChange('so101')}
-                type="button"
+                Manual
+              </Tab>
+              <Tab
+                className={({ selected }) =>
+                  `rounded-md px-3 py-1 text-sm font-medium leading-5 quicksand cursor-pointer
+                  ${
+                    selected
+                      ? 'bg-white text-gray-900 shadow'
+                      : 'text-gray-700 hover:bg-white/[0.12] hover:text-gray-900'
+                  }
+                  focus:outline-none`
+                }
               >
-                SO101
-              </button>
-            </div>
+                Code-based
+              </Tab>
+            </TabList>
+            
+            {/* Settings Icon */}
+            <button
+              type="button"
+              onClick={() => setShowCameraSettings(!showCameraSettings)}
+              className="w-8 h-8 flex items-center justify-center rounded bg-gray-200 hover:bg-gray-300 transition-colors cursor-pointer"
+              title="Settings"
+            >
+              <Settings size={16} />
+            </button>
+
+            {/* Settings Popup */}
+            {showCameraSettings && (
+              <div className="absolute top-10 right-0 w-64 bg-white border border-gray-300 rounded p-4 z-50 shadow-lg">
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="text-sm font-semibold">Settings</h4>
+                  <button
+                    onClick={() => setShowCameraSettings(false)}
+                    className="text-gray-500 hover:text-gray-700 cursor-pointer"
+                  >
+                    ✕
+                  </button>
+                </div>
+                
+                <div className="space-y-3 text-xs">
+                  {/* Robot Selection */}
+                  <div className="pb-3 border-b border-gray-200">
+                    <h5 className="font-medium text-gray-700 mb-2">Robot</h5>
+                    <div className="flex gap-2" aria-label="robot-switch">
+                      <button
+                        className={getRobotButtonClasses(activeRobot, 'lekiwi')}
+                        onClick={() => onRobotChange('lekiwi')}
+                        type="button"
+                      >
+                        LeKiwi
+                      </button>
+                      <button
+                        className={getRobotButtonClasses(activeRobot, 'so101')}
+                        onClick={() => onRobotChange('so101')}
+                        type="button"
+                      >
+                        SO101
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Camera Settings */}
+                  <div>
+                    <h5 className="font-medium text-gray-700 mb-2">Camera</h5>
+                    <div className="flex flex-col gap-2">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={storeCameraPosition}
+                          onChange={(e) => handleStoreCameraChange(e.target.checked)}
+                          className="rounded"
+                        />
+                        <span className="text-gray-700">Remember position</span>
+                      </label>
+                      
+                      <button
+                        onClick={handleResetCamera}
+                        className="w-full px-3 py-1.5 text-xs bg-gray-200 hover:bg-gray-300 rounded transition-colors"
+                      >
+                        Reset Camera
+                      </button>
+                      
+                      <div className="text-[10px] text-gray-500 mt-1 pt-2 border-t">
+                        When enabled, camera position will be saved and restored on page reload.
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
-        </div>
-
-        <div className="border-t border-gray-200 my-3" />
-
-        <h3 className="text-lg font-semibold mb-3">Robot Control</h3>
-
-        <div className="flex flex-col gap-4">
-          <PlanarControlSection sceneHandle={sceneHandle} />
+          </div>
           
-          <div className="flex items-start gap-4">
-            <MovementControl onMove={handleMove} />
-            <RotationControl onRotate={handleRotate} />
-          </div>
-        </div>
+          <TabPanels>
+            <TabPanel className="flex flex-col gap-4">
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex items-start gap-2">
+                  <MovementControl onMove={handleMove} />
+                  <RotationControl onRotate={handleRotate} />
+                </div>
+                {robotConnection.render()}
+              </div>
+              
+              <PlanarControlSection sceneHandle={sceneHandle} robotConnection={robotConnection} />
+            </TabPanel>
+            <TabPanel>
+              <RemoteControl sceneHandle={sceneHandle} />
+            </TabPanel>
+          </TabPanels>
+        </TabGroup>
 
         <div className="text-xs text-gray-600 mt-4 leading-normal border-t border-gray-200 pt-4" aria-label="attribution">
           Burger bun 3D model:

@@ -383,22 +383,54 @@ export const createMainScene = async ({
   const camera = new THREE.PerspectiveCamera(50, container.clientWidth / container.clientHeight, 0.1, 1000);
   const controls = new OrbitControls(camera, renderer.domElement);
 
-  camera.position.set(-32.539, 23.815, 4.334);
-  controls.target.set(1.952, -3.623, -1.269);
-  camera.lookAt(1.952, -3.623, -1.269);
-  controls.update()
+  // Default camera position
+  const DEFAULT_CAMERA_POSITION = { x: -32.539, y: 23.815, z: 4.334 };
+  const DEFAULT_CONTROLS_TARGET = { x: 1.952, y: -3.623, z: -1.269 };
 
-  // log the orbit control location each time it's changed
+  // Load camera position from localStorage if enabled
+  const storeCameraEnabled = localStorage.getItem('store-camera-position') === 'true';
+  if (storeCameraEnabled) {
+    const savedCamera = localStorage.getItem('camera-position');
+    const savedTarget = localStorage.getItem('camera-target');
+    if (savedCamera && savedTarget) {
+      try {
+        const cameraPos = JSON.parse(savedCamera);
+        const targetPos = JSON.parse(savedTarget);
+        camera.position.set(cameraPos.x, cameraPos.y, cameraPos.z);
+        controls.target.set(targetPos.x, targetPos.y, targetPos.z);
+        camera.lookAt(targetPos.x, targetPos.y, targetPos.z);
+      } catch (e) {
+        console.log('Failed to load saved camera position', e);
+        // Fall back to defaults
+        camera.position.set(DEFAULT_CAMERA_POSITION.x, DEFAULT_CAMERA_POSITION.y, DEFAULT_CAMERA_POSITION.z);
+        controls.target.set(DEFAULT_CONTROLS_TARGET.x, DEFAULT_CONTROLS_TARGET.y, DEFAULT_CONTROLS_TARGET.z);
+        camera.lookAt(DEFAULT_CONTROLS_TARGET.x, DEFAULT_CONTROLS_TARGET.y, DEFAULT_CONTROLS_TARGET.z);
+      }
+    } else {
+      // No saved position, use defaults
+      camera.position.set(DEFAULT_CAMERA_POSITION.x, DEFAULT_CAMERA_POSITION.y, DEFAULT_CAMERA_POSITION.z);
+      controls.target.set(DEFAULT_CONTROLS_TARGET.x, DEFAULT_CONTROLS_TARGET.y, DEFAULT_CONTROLS_TARGET.z);
+      camera.lookAt(DEFAULT_CONTROLS_TARGET.x, DEFAULT_CONTROLS_TARGET.y, DEFAULT_CONTROLS_TARGET.z);
+    }
+  } else {
+    // Use defaults when storage is disabled
+    camera.position.set(DEFAULT_CAMERA_POSITION.x, DEFAULT_CAMERA_POSITION.y, DEFAULT_CAMERA_POSITION.z);
+    controls.target.set(DEFAULT_CONTROLS_TARGET.x, DEFAULT_CONTROLS_TARGET.y, DEFAULT_CONTROLS_TARGET.z);
+    camera.lookAt(DEFAULT_CONTROLS_TARGET.x, DEFAULT_CONTROLS_TARGET.y, DEFAULT_CONTROLS_TARGET.z);
+  }
+  controls.update();
+
+  // Save camera position when it changes (if enabled)
   controls.addEventListener('change', () => {
     const p = camera.position;
     const t = controls.target;
-    console.log(
-      [
-        `camera.position.set(${p.x.toFixed(3)}, ${p.y.toFixed(3)}, ${p.z.toFixed(3)});`,
-        `controls.target.set(${t.x.toFixed(3)}, ${t.y.toFixed(3)}, ${t.z.toFixed(3)});`,
-        `camera.lookAt(${t.x.toFixed(3)}, ${t.y.toFixed(3)}, ${t.z.toFixed(3)});`,
-      ].join('\n')
-    );
+
+    // Save to localStorage if enabled
+    const enabled = localStorage.getItem('store-camera-position') === 'true';
+    if (enabled) {
+      localStorage.setItem('camera-position', JSON.stringify({ x: p.x, y: p.y, z: p.z }));
+      localStorage.setItem('camera-target', JSON.stringify({ x: t.x, y: t.y, z: t.z }));
+    }
   });
 
 
@@ -555,7 +587,8 @@ export const createMainScene = async ({
     dispose,
     getActiveRobot,
     getActiveRobotKey,
+    camera,
+    controls,
   };
 };
 
-console.log(`three.js version "${THREE.REVISION}"`);
