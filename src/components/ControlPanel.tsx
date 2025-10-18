@@ -67,8 +67,6 @@ const PlanarControlSection: React.FC<PlanarControlSectionProps> = ({ sceneHandle
   const planarControl = useMemo(() => {
     const control = new PlanarControl({
       onChange: (position, theta, circleSize) => {
-
-        console.log("planar change  ", position, theta, circleSize)
         const robot = sceneHandle?.getActiveRobot();
         if (!robot) return;
         

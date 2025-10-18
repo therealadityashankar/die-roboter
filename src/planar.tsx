@@ -256,9 +256,6 @@ export class PlanarControl {
         const indexFinger2D = hand.keypoints?.find(
           (keypoint) => keypoint.name === INDEX_FINGER_KEYPOINT
         );
-        const indexFinger3D = hand.keypoints3D?.find(
-          (keypoint) => keypoint.name === INDEX_FINGER_KEYPOINT
-        );
         const thumbTip2D = hand.keypoints?.find(
           (keypoint) => keypoint.name === THUMB_TIP_KEYPOINT
         );
@@ -377,8 +374,8 @@ export class PlanarControl {
           const cameraX = indexFinger2D.x / this.videoElement.videoWidth;
           const cameraY = indexFinger2D.y / this.videoElement.videoHeight;
 
-          const topCutoff = this.cameraToControlScale * 0.5
-          const bottomCutoff = 1 - this.cameraToControlScale * 0.5
+          const topCutoff = (1 - this.cameraToControlScale) * 0.5
+          const bottomCutoff = 1 - topCutoff
 
           let rawX = 0
           let rawY = 0
@@ -386,17 +383,17 @@ export class PlanarControl {
           if(cameraX < topCutoff) {
             rawX = 1
           } else if(cameraX > bottomCutoff) {
-            rawX = 0
+            rawX = -1
           } else {
-            rawX = 1 - ((cameraX - topCutoff) / (bottomCutoff - topCutoff))
+            rawX = 1 - 2 * ((cameraX - topCutoff) / (bottomCutoff - topCutoff))
           }
 
           if(cameraY < topCutoff) {
-            rawY = 0
+            rawY = -1
           } else if(cameraY > bottomCutoff) {
             rawY = 1
           } else {
-            rawY = (cameraY - topCutoff) / (bottomCutoff - topCutoff)
+            rawY = -1 + 2 * ((cameraY - topCutoff) / (bottomCutoff - topCutoff))
           }
           
           
@@ -551,7 +548,6 @@ export class PlanarControl {
       const [cameraButtonText, setCameraButtonText] = useState('Enable Hand Tracking');
       const [cameraButtonDisabled, setCameraButtonDisabled] = useState(false);
       const [handKeypoints, setHandKeypoints] = useState<{ thumb?: any; index?: any; ring?: any; thumbTip?: any; wrist?: any; middleFingerMcp?: any; pinkyTip?: any; ringFingerTip?: any }>({});
-      const [handTrackedPosition, setHandTrackedPosition] = useState<{ x: number; y: number; z: number } | null>(null);
       const [showSettings, setShowSettings] = useState(false);
       const [showIKViz, setShowIKViz] = useState(false);
       
@@ -630,37 +626,13 @@ export class PlanarControl {
 
         const newPosition = { ...position };
         
-        if (cameraToControlScale === 1.0) {
-          // Simple mapping when no buffer zone
-          if (axis === 'both' || axis === 'x') {
-            newPosition.x = offsetX * 2 - 1;
-          }
-          if (axis === 'both' || axis === 'y') {
-            newPosition.y = offsetY * 2 - 1;
-          }
-        } else {
-          // Mapping with buffer zone
-          const topCutoff = cameraToControlScale * 0.5;
-          const bottomCutoff = 1 - cameraToControlScale * 0.5;
-
-          if (axis === 'both' || axis === 'x') {
-            if (offsetX < topCutoff) {
-              newPosition.x = 1;
-            } else if (offsetX > bottomCutoff) {
-              newPosition.x = -1;
-            } else {
-              newPosition.x = 1 - 2 * ((offsetX - topCutoff) / (bottomCutoff - topCutoff));
-            }
-          }
-          if (axis === 'both' || axis === 'y') {
-            if (offsetY < topCutoff) {
-              newPosition.y = -1;
-            } else if (offsetY > bottomCutoff) {
-              newPosition.y = 1;
-            } else {
-              newPosition.y = -1 + 2 * ((offsetY - topCutoff) / (bottomCutoff - topCutoff));
-            }
-          }
+        // Direct mapping: click position (0-1) → control position (-1 to +1)
+        // No buffer zone logic needed - that's only for hand tracking camera boundaries
+        if (axis === 'both' || axis === 'x') {
+          newPosition.x = offsetX - 1;
+        }
+        if (axis === 'both' || axis === 'y') {
+          newPosition.y = offsetY - 1;
         }
 
         setPosition(newPosition);
@@ -772,7 +744,6 @@ export class PlanarControl {
             setGripperMouthAngle(control.getGripperMouthAngle());
             setWristFlexAngle(control.getWristFlexAngle());
             setHandKeypoints(control.handKeypoints);
-            setHandTrackedPosition(control.handTrackedPosition);
           }
         }, 50);
 
@@ -789,15 +760,15 @@ export class PlanarControl {
         if (!ctx) return;
 
         // Set canvas internal resolution to match display size (220x220) for proper aspect ratio
-        canvas.width = 220;
-        canvas.height = 220;
+        canvas.width = 348;
+        canvas.height = 348;
 
         // Clear canvas
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
         // Scale coordinates from video dimensions to canvas dimensions
-        const scaleX = canvas.width / (video.videoWidth || 220);
-        const scaleY = canvas.height / (video.videoHeight || 220);
+        const scaleX = canvas.width / (video.videoWidth || 348);
+        const scaleY = canvas.height / (video.videoHeight || 348);
 
         // Draw control range boundary box
         if (handTracking) {
@@ -867,20 +838,12 @@ export class PlanarControl {
       }, [handTracking, handKeypoints, gripperAngle]);
 
       // Calculate position percentages for display
-      let xPercent, yPercent;
-      if (cameraToControlScale === 1.0) {
-        // Simple mapping when no buffer zone
-        xPercent = ((position.x + 1) / 2) * 100;
-        yPercent = ((position.y + 1) / 2) * 100;
-      } else {
-        // Mapping with buffer zone
-        const topCutoff = cameraToControlScale * 0.5;
-        const bottomCutoff = 1 - cameraToControlScale * 0.5;
-        const activeRange = bottomCutoff - topCutoff;
-        
-        xPercent = (topCutoff + ((position.x + 1) / 2) * activeRange) * 100;
-        yPercent = (topCutoff + ((position.y + 1) / 2) * activeRange) * 100;
-      }
+      // position.x and position.y are already in -1 to +1 range representing full control area
+      const xPercent = ((position.x + 1) / 2) * 100;
+      const yPercent = ((position.y + 1) / 2) * 100;
+ 
+      console.log('xPercent', xPercent);
+      console.log('yPercent', yPercent);
 
       // Linear slider handlers for circle size
       const sliderRef = useRef<HTMLDivElement>(null);
