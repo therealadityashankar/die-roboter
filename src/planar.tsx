@@ -544,6 +544,7 @@ export class PlanarControl {
       );
       const [wristFlexAngle, setWristFlexAngle] = useState(control.getWristFlexAngle());
       const [isDraggingCircleSize, setIsDraggingCircleSize] = useState(false);
+      const [isDraggingPosition, setIsDraggingPosition] = useState(false);
       const [handTracking, setHandTracking] = useState(false);
       const [cameraButtonText, setCameraButtonText] = useState('Enable Hand Tracking');
       const [cameraButtonDisabled, setCameraButtonDisabled] = useState(false);
@@ -629,10 +630,10 @@ export class PlanarControl {
         // Direct mapping: click position (0-1) → control position (-1 to +1)
         // No buffer zone logic needed - that's only for hand tracking camera boundaries
         if (axis === 'both' || axis === 'x') {
-          newPosition.x = offsetX - 1;
+          newPosition.x = 2*offsetX - 1;
         }
         if (axis === 'both' || axis === 'y') {
-          newPosition.y = offsetY - 1;
+          newPosition.y = 2*offsetY - 1;
         }
 
         setPosition(newPosition);
@@ -651,6 +652,7 @@ export class PlanarControl {
           target: event.currentTarget,
         };
         event.currentTarget.setPointerCapture(event.pointerId);
+        if (axis === 'both') setIsDraggingPosition(true);
         updateFromPointer(event, axis);
       };
 
@@ -672,6 +674,7 @@ export class PlanarControl {
         if (activeInteractionRef.current.target.hasPointerCapture(event.pointerId)) {
           activeInteractionRef.current.target.releasePointerCapture(event.pointerId);
         }
+        if (activeInteractionRef.current.axis === 'both') setIsDraggingPosition(false);
         activeInteractionRef.current = null;
       };
 
@@ -981,7 +984,9 @@ export class PlanarControl {
 
               {/* Target Circle (variable size) */}
               <div
-                className="absolute rounded-full border-2 border-blue-500 bg-white cursor-pointer pointer-events-auto"
+                className={`absolute rounded-full border-2 border-blue-500 bg-white pointer-events-auto ${
+                  isDraggingPosition ? 'cursor-grabbing' : 'cursor-grab'
+                }`}
                 style={{
                   zIndex: 2,
                   left: `${xPercent}%`,
